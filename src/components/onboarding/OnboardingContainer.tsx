@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import OnboardingStep from './OnboardingStep';
 
@@ -27,6 +27,17 @@ export default function OnboardingContainer() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
 
+  // Voorkom scrollen op body/html niveau
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
+
   const handleNext = () => {
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -44,15 +55,15 @@ export default function OnboardingContainer() {
   const currentStepData = onboardingSteps[currentStep];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="fixed inset-0 h-screen w-screen bg-gray-50 overflow-hidden flex flex-col z-50">
       {/* Progress bar */}
-      <div className="w-full bg-gray-200 h-1">
+      <div className="w-full bg-gray-200 h-1 flex-shrink-0">
         <div
           className="bg-purple-600 h-1 transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="p-4 text-sm text-gray-500 text-center">
+      <div className="py-2 px-4 text-xs text-gray-500 text-center flex-shrink-0">
         Stap {currentStep + 1} van {onboardingSteps.length}
       </div>
 
