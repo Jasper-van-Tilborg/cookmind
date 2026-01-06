@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Package } from 'lucide-react';
+import { Plus, Package, ScanLine } from 'lucide-react';
 import InventoryItem from '@/src/components/inventory/InventoryItem';
 import AddItemModal from '@/src/components/inventory/AddItemModal';
 import InventoryCTA from '@/src/components/inventory/InventoryCTA';
+import BarcodeScanner from '@/src/components/inventory/BarcodeScanner';
 import { InventoryItem as InventoryItemType } from '@/src/types';
 import { mockInventory } from '@/src/lib/data';
 import { storage } from '@/src/lib/storage';
@@ -13,6 +14,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItemType[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
@@ -96,17 +98,30 @@ export default function InventoryPage() {
     }
   };
 
+  const handleBarcodeScan = async (item: Omit<InventoryItemType, 'id'>) => {
+    await handleAddItem(item);
+  };
+
   return (
     <div className="p-4 pb-6 max-w-md mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Voorraad</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          aria-label="Item toevoegen"
-        >
-          <Plus size={24} />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            aria-label="Barcode scannen"
+          >
+            <ScanLine size={24} />
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            aria-label="Item toevoegen"
+          >
+            <Plus size={24} />
+          </button>
+        </div>
       </div>
 
       {/* CTA Card */}
@@ -158,6 +173,12 @@ export default function InventoryPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAddItem}
+      />
+
+      <BarcodeScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleBarcodeScan}
       />
     </div>
   );

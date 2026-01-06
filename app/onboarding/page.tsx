@@ -4,3 +4,4 @@ export default function OnboardingPage() {
   return <OnboardingContainer />;
 }
 
+

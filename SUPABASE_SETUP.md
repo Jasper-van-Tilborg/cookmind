@@ -38,3 +38,4 @@ Ga naar de inventory pagina en voeg een item toe. Het zou nu opgeslagen moeten w
 - De app gebruikt nu Supabase als primaire storage
 - Als Supabase niet beschikbaar is, valt de app terug op LocalStorage
 - Wanneer je later authenticatie toevoegt, moet je de RLS policies aanpassen om per gebruiker te filteren
+
