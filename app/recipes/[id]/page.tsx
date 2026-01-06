@@ -3,12 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Clock, Users, ChefHat } from 'lucide-react';
+import { Clock, Users, ChefHat, Sparkles } from 'lucide-react';
 import MatchBadge from '@/src/components/recipes/MatchBadge';
-import { Recipe } from '@/src/types';
+import SubstitutionBadge from '@/src/components/recipes/SubstitutionBadge';
+import SubstitutionModal from '@/src/components/recipes/SubstitutionModal';
+import SubstitutionSuggestions from '@/src/components/recipes/SubstitutionSuggestions';
+import AITweaker from '@/src/components/recipes/AITweaker';
+import { Recipe, Substitution, InventoryItem } from '@/src/types';
 import { mockRecipes } from '@/src/lib/data';
 import { storage } from '@/src/lib/storage';
 import { aiSimulator } from '@/src/lib/simulation';
+import { updateRecipeSteps } from '@/src/lib/recipe-utils';
 import { useAuth } from '@/src/contexts/AuthContext';
 
 export default function RecipeDetailPage() {
@@ -20,13 +25,20 @@ export default function RecipeDetailPage() {
   const [servings, setServings] = useState(4);
   const [checkedIngredients, setCheckedIngredients] = useState<Set<string>>(new Set());
   const [inventory, setInventory] = useState<string[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [match, setMatch] = useState(0);
   const [missingIngredients, setMissingIngredients] = useState<string[]>([]);
+  const [acceptedSubstitutions, setAcceptedSubstitutions] = useState<Map<string, Substitution>>(new Map());
+  const [selectedIngredientForSubstitution, setSelectedIngredientForSubstitution] = useState<string | null>(null);
+  const [isSubstitutionModalOpen, setIsSubstitutionModalOpen] = useState(false);
+  const [isAITweakerOpen, setIsAITweakerOpen] = useState(false);
+  const [displayRecipe, setDisplayRecipe] = useState<Recipe | null>(null);
 
   useEffect(() => {
     const foundRecipe = mockRecipes.find(r => r.id === recipeId);
     if (foundRecipe) {
       setRecipe(foundRecipe);
+      setDisplayRecipe(foundRecipe);
       setServings(foundRecipe.servings);
     }
   }, [recipeId]);
@@ -37,6 +49,7 @@ export default function RecipeDetailPage() {
         const savedInventory = await storage.getInventory(user.id);
         const inventoryNames = savedInventory.map(item => item.name);
         setInventory(inventoryNames);
+        setInventoryItems(savedInventory);
 
         if (recipe) {
           const recipeIngredients = recipe.ingredients.map(ing => ing.name);
@@ -58,7 +71,32 @@ export default function RecipeDetailPage() {
     }
   }, [recipe, user]);
 
-  if (!recipe) {
+  // Update display recipe when substitutions are accepted
+  useEffect(() => {
+    if (recipe && acceptedSubstitutions.size > 0) {
+      const updatedSteps = updateRecipeSteps(recipe, Array.from(acceptedSubstitutions.values()));
+      const updatedIngredients = recipe.ingredients.map(ing => {
+        const substitution = acceptedSubstitutions.get(ing.name);
+        if (substitution) {
+          return {
+            ...ing,
+            name: substitution.substitute,
+          };
+        }
+        return ing;
+      });
+
+      setDisplayRecipe({
+        ...recipe,
+        ingredients: updatedIngredients,
+        steps: updatedSteps,
+      });
+    } else if (recipe) {
+      setDisplayRecipe(recipe);
+    }
+  }, [recipe, acceptedSubstitutions]);
+
+  if (!recipe || !displayRecipe) {
     return (
       <div className="p-4">
         <p>Recept niet gevonden</p>
@@ -82,6 +120,19 @@ export default function RecipeDetailPage() {
 
   const handleStartCooking = () => {
     router.push(`/recipes/${recipe.id}/cook`);
+  };
+
+  const handleSubstitutionAccept = (substitution: Substitution) => {
+    const newSubstitutions = new Map(acceptedSubstitutions);
+    newSubstitutions.set(substitution.original, substitution);
+    setAcceptedSubstitutions(newSubstitutions);
+  };
+
+  const handleAITweakerAccept = (modifiedRecipe: Recipe) => {
+    setDisplayRecipe(modifiedRecipe);
+    setRecipe(modifiedRecipe);
+    // Reset substitutions when recipe is completely modified
+    setAcceptedSubstitutions(new Map());
   };
 
   return (
@@ -108,8 +159,17 @@ export default function RecipeDetailPage() {
       <div className="p-4 space-y-6">
         {/* Title & Description */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">{recipe.title}</h1>
-          <p className="text-gray-600">{recipe.description}</p>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-bold text-gray-800">{displayRecipe.title}</h1>
+            <button
+              onClick={() => setIsAITweakerOpen(true)}
+              className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors"
+              title="AI Tweaker"
+            >
+              <Sparkles size={20} />
+            </button>
+          </div>
+          <p className="text-gray-600">{displayRecipe.description}</p>
         </div>
 
         {/* Meta Info */}
@@ -151,58 +211,75 @@ export default function RecipeDetailPage() {
         <div>
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Ingrediënten</h2>
           <div className="space-y-2">
-            {recipe.ingredients.map((ingredient, index) => {
+            {displayRecipe.ingredients.map((ingredient, index) => {
               const adjustedAmount = getAdjustedAmount(ingredient.amount);
               const isChecked = checkedIngredients.has(ingredient.name);
+              const originalIngredient = recipe.ingredients.find(ing => 
+                ing.name === ingredient.name || 
+                acceptedSubstitutions.get(ing.name)?.substitute === ingredient.name
+              ) || ingredient;
+              const isSubstituted = acceptedSubstitutions.has(originalIngredient.name);
               const isInInventory = inventory.some(inv => 
                 inv.toLowerCase().includes(ingredient.name.toLowerCase()) || 
                 ingredient.name.toLowerCase().includes(inv.toLowerCase())
               );
+              const isMissing = missingIngredients.includes(originalIngredient.name);
 
               return (
-                <label
-                  key={index}
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                    isChecked
-                      ? 'bg-green-50 border-green-200'
-                      : isInInventory
-                      ? 'bg-white border-gray-200'
-                      : 'bg-yellow-50 border-yellow-200'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => handleIngredientToggle(ingredient.name)}
-                    className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
-                  />
-                  <span className={`flex-1 ${isChecked ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                    {adjustedAmount} {ingredient.unit} {ingredient.name}
-                  </span>
-                  {!isInInventory && (
-                    <span className="text-xs text-yellow-600 font-medium">Ontbreekt</span>
-                  )}
-                </label>
+                <div key={index}>
+                  <label
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                      isChecked
+                        ? 'bg-green-50 border-green-200'
+                        : isInInventory
+                        ? 'bg-white border-gray-200'
+                        : 'bg-yellow-50 border-yellow-200'
+                    } ${isSubstituted ? 'border-purple-300 bg-purple-50' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleIngredientToggle(ingredient.name)}
+                      className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                    />
+                    <span className={`flex-1 ${isChecked ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                      {adjustedAmount} {ingredient.unit} {ingredient.name}
+                      {isSubstituted && (
+                        <span className="ml-2 text-xs text-purple-600">
+                          (vervangen voor {originalIngredient.name})
+                        </span>
+                      )}
+                    </span>
+                    {!isInInventory && isMissing && (
+                      <SubstitutionBadge
+                        onClick={() => {
+                          setSelectedIngredientForSubstitution(originalIngredient.name);
+                          setIsSubstitutionModalOpen(true);
+                        }}
+                        loading={false}
+                      />
+                    )}
+                    {!isInInventory && !isMissing && (
+                      <span className="text-xs text-yellow-600 font-medium">Ontbreekt</span>
+                    )}
+                  </label>
+                </div>
               );
             })}
           </div>
 
-          {/* Missing Ingredients Substitution */}
-          {missingIngredients.length > 0 && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="text-sm font-semibold text-blue-800 mb-2">
-                AI Substitutie suggesties
-              </h3>
-              {missingIngredients.slice(0, 2).map((ingredient, index) => {
-                const substitutions = aiSimulator.suggestSubstitutions(ingredient);
-                return (
-                  <div key={index} className="mb-2 last:mb-0">
-                    <p className="text-xs text-blue-700 mb-1">
-                      <strong>{ingredient}:</strong> {substitutions.join(', ')}
-                    </p>
-                  </div>
-                );
-              })}
+          {/* Show accepted substitutions */}
+          {acceptedSubstitutions.size > 0 && (
+            <div className="mt-4">
+              {Array.from(acceptedSubstitutions.values()).map((sub, index) => (
+                <SubstitutionSuggestions
+                  key={index}
+                  originalIngredient={sub.original}
+                  substitutions={[sub]}
+                  loading={false}
+                  onAccept={() => {}}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -211,7 +288,7 @@ export default function RecipeDetailPage() {
         <div>
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Bereidingswijze</h2>
           <div className="space-y-4">
-            {recipe.steps.map((step, index) => (
+            {displayRecipe.steps.map((step, index) => (
               <div key={index} className="flex gap-4">
                 <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
                   {index + 1}
@@ -231,6 +308,29 @@ export default function RecipeDetailPage() {
           START MET KOKEN
         </button>
       </div>
+
+      {/* Substitution Modal */}
+      {isSubstitutionModalOpen && selectedIngredientForSubstitution && (
+        <SubstitutionModal
+          isOpen={isSubstitutionModalOpen}
+          onClose={() => {
+            setIsSubstitutionModalOpen(false);
+            setSelectedIngredientForSubstitution(null);
+          }}
+          recipe={recipe}
+          missingIngredient={selectedIngredientForSubstitution}
+          onSubstitutionAccepted={handleSubstitutionAccept}
+        />
+      )}
+
+      {/* AI Tweaker */}
+      <AITweaker
+        recipe={displayRecipe}
+        userInventory={inventory}
+        isOpen={isAITweakerOpen}
+        onClose={() => setIsAITweakerOpen(false)}
+        onAccept={handleAITweakerAccept}
+      />
     </div>
   );
 }

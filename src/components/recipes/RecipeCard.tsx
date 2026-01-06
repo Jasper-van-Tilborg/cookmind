@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { Clock } from 'lucide-react';
 import MatchBadge from './MatchBadge';
+import SubstitutionBadge from './SubstitutionBadge';
+import SubstitutionModal from './SubstitutionModal';
 import { Recipe } from '@/src/types';
 
 interface RecipeCardProps {
@@ -18,11 +21,21 @@ export default function RecipeCard({
   missingIngredients = [],
   onClick,
 }: RecipeCardProps) {
+  const [selectedIngredient, setSelectedIngredient] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleSubstitutionClick = (e: React.MouseEvent, ingredient: string) => {
+    e.stopPropagation();
+    setSelectedIngredient(ingredient);
+    setIsModalOpen(true);
+  };
+
   return (
-    <div
-      onClick={onClick}
-      className="bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-    >
+    <>
+      <div
+        onClick={onClick}
+        className="bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+      >
       <div className="relative w-full h-48 bg-gray-200">
         {recipe.imageUrl ? (
           <Image
@@ -59,15 +72,40 @@ export default function RecipeCard({
 
         {missingIngredients.length > 0 && match < 100 && (
           <div className="pt-3 border-t border-gray-100">
-            <p className="text-xs text-gray-500 mb-1">Ontbreekt:</p>
-            <p className="text-xs text-gray-700">
-              {missingIngredients.slice(0, 2).join(', ')}
-              {missingIngredients.length > 2 && ` +${missingIngredients.length - 2} meer`}
-            </p>
+            <p className="text-xs text-gray-500 mb-2">Ontbreekt:</p>
+            <div className="space-y-1">
+              {missingIngredients.slice(0, 2).map((ingredient, index) => (
+                <div key={index} className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-gray-700">{ingredient}</span>
+                  <SubstitutionBadge
+                    onClick={(e) => handleSubstitutionClick(e, ingredient)}
+                    loading={false}
+                  />
+                </div>
+              ))}
+              {missingIngredients.length > 2 && (
+                <p className="text-xs text-gray-500">
+                  +{missingIngredients.length - 2} meer
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>
     </div>
+
+    {isModalOpen && selectedIngredient && (
+      <SubstitutionModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedIngredient(null);
+        }}
+        recipe={recipe}
+        missingIngredient={selectedIngredient}
+      />
+    )}
+    </>
   );
 }
 

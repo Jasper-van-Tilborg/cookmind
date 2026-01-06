@@ -28,5 +28,22 @@ export interface Recipe {
 
 export type FilterType = 'all' | 'quick' | 'vegetarian';
 
+export interface Substitution {
+  original: string;
+  substitute: string;
+  reason: string;
+  adjustments?: string; // Optionele aanpassingen aan kooktijd/temperatuur
+}
+
+export interface RecipeWithSubstitutions extends Recipe {
+  substitutions?: Substitution[];
+}
+
+export interface AITweakerRequest {
+  recipe: Recipe;
+  prompt: string;
+  userInventory: string[];
+}
+
 
 
