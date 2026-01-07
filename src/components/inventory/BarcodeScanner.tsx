@@ -129,7 +129,7 @@ export default function BarcodeScanner({
             <div className="text-center text-white p-4 sm:p-6 max-w-sm mx-auto">
               {error ? (
                 <>
-                  <AlertCircle className="mx-auto mb-3 sm:mb-4" size={40} className="sm:w-12 sm:h-12" />
+                  <AlertCircle className="mx-auto mb-3 sm:mb-4 sm:w-12 sm:h-12" size={40} />
                   <p className="mb-4 text-sm sm:text-base px-4">{error}</p>
                   <button
                     onClick={startScanner}
