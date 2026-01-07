@@ -113,3 +113,5 @@ export default function ProductDetailPage() {
   return <ProductDetail product={product} onAdd={handleAdd} onCancel={handleCancel} />;
 }
 
+
+

@@ -9,7 +9,10 @@ import SubstitutionBadge from '@/src/components/recipes/SubstitutionBadge';
 import SubstitutionModal from '@/src/components/recipes/SubstitutionModal';
 import SubstitutionSuggestions from '@/src/components/recipes/SubstitutionSuggestions';
 import AITweaker from '@/src/components/recipes/AITweaker';
-import { Recipe, Substitution, InventoryItem } from '@/src/types';
+import FavoriteButton from '@/src/components/recipes/FavoriteButton';
+import VariantMessage from '@/src/components/recipes/VariantMessage';
+import { Recipe, Substitution, InventoryItem, VariantCheckResult } from '@/src/types';
+import { isBasicInventoryItem, isVariantOfBasicInventory, BASIC_INVENTORY_ITEMS } from '@/src/lib/basic-inventory';
 import { mockRecipes } from '@/src/lib/data';
 import { storage } from '@/src/lib/storage';
 import { aiSimulator } from '@/src/lib/simulation';
@@ -28,6 +31,8 @@ export default function RecipeDetailPage() {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [match, setMatch] = useState(0);
   const [missingIngredients, setMissingIngredients] = useState<string[]>([]);
+  const [variantChecks, setVariantChecks] = useState<Map<string, VariantCheckResult>>(new Map());
+  const [loadingVariants, setLoadingVariants] = useState<Set<string>>(new Set());
   const [acceptedSubstitutions, setAcceptedSubstitutions] = useState<Map<string, Substitution>>(new Map());
   const [selectedIngredientForSubstitution, setSelectedIngredientForSubstitution] = useState<string | null>(null);
   const [isSubstitutionModalOpen, setIsSubstitutionModalOpen] = useState(false);
@@ -63,6 +68,9 @@ export default function RecipeDetailPage() {
             )
           );
           setMissingIngredients(missing);
+
+          // Check voor varianten van basisvoorraad
+          checkVariantsForMissingIngredients(missing, inventoryNames, recipe);
         }
       }
     }
@@ -135,6 +143,69 @@ export default function RecipeDetailPage() {
     setAcceptedSubstitutions(new Map());
   };
 
+  const checkVariantsForMissingIngredients = async (
+    missing: string[],
+    inventoryNames: string[],
+    recipe: Recipe
+  ) => {
+    if (!user || !recipe) return;
+
+    // Haal basisvoorraad items op uit inventory
+    const basicInventoryItems = inventoryNames.filter(name =>
+      isBasicInventoryItem(name)
+    );
+
+    if (basicInventoryItems.length === 0) return;
+
+    // Check elk missing ingredient
+    for (const missingIngredient of missing) {
+      const variantCheck = isVariantOfBasicInventory(missingIngredient, inventoryNames);
+      
+      if (variantCheck.isVariant && variantCheck.basicItem) {
+        // AI check variant acceptabiliteit
+        setLoadingVariants(prev => new Set(prev).add(missingIngredient));
+        
+        try {
+          const response = await fetch('/api/ai/check-variant', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              recipeId: recipe.id,
+              recipeIngredient: missingIngredient,
+              userBasicInventory: basicInventoryItems,
+            }),
+          });
+
+          if (response.ok) {
+            const result: VariantCheckResult = await response.json();
+            setVariantChecks(prev => {
+              const newMap = new Map(prev);
+              newMap.set(missingIngredient, result);
+              return newMap;
+            });
+          }
+        } catch (error) {
+          console.error('Error checking variant:', error);
+        } finally {
+          setLoadingVariants(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(missingIngredient);
+            return newSet;
+          });
+        }
+      }
+    }
+  };
+
+  const handleAddVariant = async (variant: string) => {
+    if (!user) return;
+    
+    // Navigeer naar product search met variant naam
+    router.push(`/inventory?search=${encodeURIComponent(variant)}`);
+  };
+
   return (
     <div className="pb-6 max-w-md mx-auto">
       {/* Recipe Image */}
@@ -161,13 +232,16 @@ export default function RecipeDetailPage() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-bold text-gray-800">{displayRecipe.title}</h1>
-            <button
-              onClick={() => setIsAITweakerOpen(true)}
-              className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors"
-              title="AI Tweaker"
-            >
-              <Sparkles size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+              <FavoriteButton recipeId={recipe.id} />
+              <button
+                onClick={() => setIsAITweakerOpen(true)}
+                className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors touch-target"
+                title="AI Tweaker"
+              >
+                <Sparkles size={20} />
+              </button>
+            </div>
           </div>
           <p className="text-gray-600">{displayRecipe.description}</p>
         </div>
@@ -210,6 +284,19 @@ export default function RecipeDetailPage() {
         {/* Ingredients */}
         <div>
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Ingrediënten</h2>
+          
+          {/* Variant Messages */}
+          {Array.from(variantChecks.entries()).map(([ingredient, variantCheck]) => {
+            if (!variantCheck.message) return null;
+            return (
+              <VariantMessage
+                key={ingredient}
+                variant={variantCheck}
+                onAddVariant={() => handleAddVariant(variantCheck.variant || ingredient)}
+              />
+            );
+          })}
+
           <div className="space-y-2">
             {displayRecipe.ingredients.map((ingredient, index) => {
               const adjustedAmount = getAdjustedAmount(ingredient.amount);

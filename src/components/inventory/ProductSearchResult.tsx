@@ -57,3 +57,5 @@ export default function ProductSearchResult({ product, onClick }: ProductSearchR
   );
 }
 
+
+

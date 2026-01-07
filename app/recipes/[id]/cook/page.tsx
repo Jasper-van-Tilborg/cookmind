@@ -1,18 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { X, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { X, ChevronLeft, ChevronRight, Check, Clock } from 'lucide-react';
 import CookingStep from '@/src/components/cooking/CookingStep';
+import Timer from '@/src/components/cooking/Timer';
 import { Recipe } from '@/src/types';
 import { mockRecipes } from '@/src/lib/data';
+import { getIngredientsForStep, getTimeFromStep } from '@/src/lib/recipe-utils';
 
 export default function CookingModePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const recipeId = Number(params.id);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isTimerOpen, setIsTimerOpen] = useState(false);
+  const [timerInitialMinutes, setTimerInitialMinutes] = useState(0);
+  
+  // Get servings from URL params or use recipe default
+  const servings = searchParams.get('servings') 
+    ? Number(searchParams.get('servings')) 
+    : undefined;
 
   useEffect(() => {
     const foundRecipe = mockRecipes.find(r => r.id === recipeId);
@@ -60,13 +70,22 @@ export default function CookingModePage() {
         <div className="flex items-center justify-between mb-2">
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors touch-target"
             aria-label="Sluiten"
           >
             <X size={24} />
           </button>
           <h2 className="font-semibold text-gray-800">{recipe.title}</h2>
-          <div className="w-10" /> {/* Spacer for centering */}
+          <button
+            onClick={() => {
+              setTimerInitialMinutes(0);
+              setIsTimerOpen(true);
+            }}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors touch-target relative"
+            aria-label="Timer openen"
+          >
+            <Clock size={24} className="text-purple-600" />
+          </button>
         </div>
         
         {/* Progress Bar */}
@@ -87,8 +106,27 @@ export default function CookingModePage() {
           stepNumber={currentStep + 1}
           instruction={recipe.steps[currentStep]}
           isActive={true}
+          ingredients={
+            recipe
+              ? getIngredientsForStep(recipe, currentStep, servings || recipe.servings)
+                  .map(ing => `${ing.amount}${ing.unit} ${ing.name}`)
+              : []
+          }
+          timeNeeded={getTimeFromStep(recipe.steps[currentStep])}
+          onStartTimer={(minutes) => {
+            setTimerInitialMinutes(minutes);
+            setIsTimerOpen(true);
+          }}
         />
       </div>
+
+      {/* Timer Modal */}
+      {isTimerOpen && (
+        <Timer
+          initialMinutes={timerInitialMinutes}
+          onClose={() => setIsTimerOpen(false)}
+        />
+      )}
 
       {/* Navigation Footer */}
       <div className="bg-white border-t border-gray-200 px-4 py-4">
@@ -126,6 +164,7 @@ export default function CookingModePage() {
     </div>
   );
 }
+
 
 
 

@@ -44,6 +44,79 @@ export interface Database {
           updated_at?: string
         }
       }
+      favorites: {
+        Row: {
+          id: string
+          user_id: string
+          recipe_id: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          recipe_id: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          recipe_id?: number
+          created_at?: string
+        }
+      }
+      user_recipes: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          description: string
+          prep_time: number
+          servings: number
+          difficulty: string
+          ingredients: Json
+          steps: Json
+          image_url: string | null
+          video_url: string | null
+          thumbnail_url: string | null
+          tags: string[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          description: string
+          prep_time: number
+          servings: number
+          difficulty: string
+          ingredients: Json
+          steps: Json
+          image_url?: string | null
+          video_url?: string | null
+          thumbnail_url?: string | null
+          tags?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          description?: string
+          prep_time?: number
+          servings?: number
+          difficulty?: string
+          ingredients?: Json
+          steps?: Json
+          image_url?: string | null
+          video_url?: string | null
+          thumbnail_url?: string | null
+          tags?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -56,6 +129,7 @@ export interface Database {
     }
   }
 }
+
 
 
 

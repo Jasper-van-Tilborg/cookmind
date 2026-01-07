@@ -24,9 +24,18 @@ export interface Recipe {
   steps: string[];
   imageUrl?: string;
   tags?: string[]; // voor filters zoals 'vegetarisch', 'snel'
+  stepIngredients?: { stepIndex: number; ingredients: RecipeIngredient[] }[];
 }
 
-export type FilterType = 'all' | 'quick' | 'vegetarian';
+export type FilterType = 'all' | 'quick' | 'vegetarian' | 'favorites';
+
+export interface AdvancedFilters {
+  timeRange?: { min: number; max: number };
+  difficulty?: ('Makkelijk' | 'Gemiddeld' | 'Moeilijk')[];
+  cuisine?: string[];
+  diet?: ('vegetarisch' | 'vegan' | 'glutenvrij' | 'lactosevrij')[];
+  missingOne?: boolean;
+}
 
 export interface Substitution {
   original: string;
@@ -43,6 +52,31 @@ export interface AITweakerRequest {
   recipe: Recipe;
   prompt: string;
   userInventory: string[];
+}
+
+export interface BasicInventoryItem {
+  name: string;
+  category: string;
+  quantity: number;
+  unit?: string;
+}
+
+export interface VariantCheckResult {
+  acceptable: boolean;
+  message: string;
+  needsVariant: boolean;
+  basicItem?: string;
+  variant?: string;
+}
+
+export interface UserRecipe extends Recipe {
+  userId: string;
+  username: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  createdAt: Date;
+  likes?: number;
+  isVideo: boolean;
 }
 
 

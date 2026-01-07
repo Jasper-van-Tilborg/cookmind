@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { Plus, Package, ScanLine } from 'lucide-react';
 import InventoryItem from '@/src/components/inventory/InventoryItem';
 import ProductSearchModal from '@/src/components/inventory/ProductSearchModal';
+import BasicInventoryModal from '@/src/components/inventory/BasicInventoryModal';
 import InventoryCTA from '@/src/components/inventory/InventoryCTA';
 import BarcodeScanner from '@/src/components/inventory/BarcodeScanner';
 import { InventoryItem as InventoryItemType } from '@/src/types';
-import { mockInventory } from '@/src/lib/data';
 import { storage } from '@/src/lib/storage';
 import { useAuth } from '@/src/contexts/AuthContext';
 
@@ -15,6 +15,7 @@ export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItemType[]>([]);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isBasicInventoryModalOpen, setIsBasicInventoryModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
@@ -25,17 +26,11 @@ export default function InventoryPage() {
       try {
         const userId = user?.id;
         const savedInventory = await storage.getInventory(userId);
-        if (savedInventory.length > 0) {
-          setItems(savedInventory);
-        } else {
-          // Use mock data if no saved data
-          setItems(mockInventory);
-          await storage.setInventory(mockInventory, userId);
-        }
+        setItems(savedInventory);
       } catch (error) {
         console.error('Error loading inventory:', error);
-        // Fallback to mock data
-        setItems(mockInventory);
+        // Bij error, gewoon lege lijst tonen
+        setItems([]);
       } finally {
         setIsLoading(false);
       }
@@ -57,31 +52,8 @@ export default function InventoryPage() {
     }
   };
 
-  const handleAddBasicInventory = async () => {
-    const basicItems: Omit<InventoryItemType, 'id'>[] = [
-      { name: 'Tomaat', category: 'Groente', quantity: 4 },
-      { name: 'Ui', category: 'Groente', quantity: 2 },
-      { name: 'Kipfilet', category: 'Vlees', quantity: 500, unit: 'g' },
-      { name: 'Rijst', category: 'Graan', quantity: 1, unit: 'kg' },
-      { name: 'Olijfolie', category: 'Vet', quantity: 1, unit: 'fles' },
-    ];
-    
-    try {
-      const addedItems: InventoryItemType[] = [];
-      for (const item of basicItems) {
-        const added = await storage.addInventoryItem(item, user?.id);
-        addedItems.push(added);
-      }
-      setItems([...items, ...addedItems]);
-    } catch (error) {
-      console.error('Error adding basic inventory:', error);
-      // Fallback: add locally
-      const itemsWithIds = basicItems.map((item, index) => ({
-        ...item,
-        id: Date.now() + index,
-      }));
-      setItems([...items, ...itemsWithIds]);
-    }
+  const handleBasicInventoryAdded = (addedItems: InventoryItemType[]) => {
+    setItems([...items, ...addedItems]);
   };
 
 
@@ -115,17 +87,15 @@ export default function InventoryPage() {
       )}
 
       {/* Basisvoorraad knop */}
-      {items.length === 0 && (
-        <div className="mb-6">
-          <button
-            onClick={handleAddBasicInventory}
-            className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium"
-          >
-            <Package size={20} />
-            Basisvoorraad toevoegen
-          </button>
-        </div>
-      )}
+      <div className="mb-6">
+        <button
+          onClick={() => setIsBasicInventoryModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium touch-target"
+        >
+          <Package size={20} />
+          Basisvoorraad toevoegen
+        </button>
+      </div>
 
       {/* Inventory List */}
       {isLoading ? (
@@ -160,6 +130,12 @@ export default function InventoryPage() {
       <BarcodeScanner
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
+      />
+
+      <BasicInventoryModal
+        isOpen={isBasicInventoryModalOpen}
+        onClose={() => setIsBasicInventoryModalOpen(false)}
+        onItemsAdded={handleBasicInventoryAdded}
       />
     </div>
   );

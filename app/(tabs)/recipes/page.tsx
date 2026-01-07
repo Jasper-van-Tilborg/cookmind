@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import RecipeCard from '@/src/components/recipes/RecipeCard';
 import RecipeFilters from '@/src/components/recipes/RecipeFilters';
-import { Recipe, FilterType } from '@/src/types';
+import RecipeFilterModal from '@/src/components/recipes/RecipeFilterModal';
+import { Recipe, FilterType, AdvancedFilters } from '@/src/types';
 import { mockRecipes } from '@/src/lib/data';
 import { storage } from '@/src/lib/storage';
 import { aiSimulator } from '@/src/lib/simulation';
@@ -15,7 +16,10 @@ export default function RecipesPage() {
   const { user } = useAuth();
   const [recipes] = useState<Recipe[]>(mockRecipes);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({});
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [inventory, setInventory] = useState<string[]>([]);
+  const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<number[]>([]);
 
   useEffect(() => {
     async function loadInventory() {
@@ -23,6 +27,10 @@ export default function RecipesPage() {
         const savedInventory = await storage.getInventory(user.id);
         const inventoryNames = savedInventory.map(item => item.name);
         setInventory(inventoryNames);
+        
+        // Load favorites
+        const favorites = await storage.getFavorites(user.id);
+        setFavoriteRecipeIds(favorites);
       }
     }
     loadInventory();
@@ -53,15 +61,54 @@ export default function RecipesPage() {
   const filteredRecipes = useMemo(() => {
     let filtered = recipesWithMatches;
 
+    // Basic filters
     if (activeFilter === 'quick') {
       filtered = filtered.filter(item => item.recipe.prepTime < 30);
     } else if (activeFilter === 'vegetarian') {
       filtered = filtered.filter(item => item.recipe.tags?.includes('vegetarisch'));
+    } else if (activeFilter === 'favorites') {
+      filtered = filtered.filter(item => favoriteRecipeIds.includes(item.recipe.id));
+    }
+
+    // Advanced filters
+    if (advancedFilters.timeRange) {
+      const { min, max } = advancedFilters.timeRange;
+      filtered = filtered.filter(item => 
+        item.recipe.prepTime >= min && item.recipe.prepTime <= max
+      );
+    }
+
+    if (advancedFilters.difficulty && advancedFilters.difficulty.length > 0) {
+      filtered = filtered.filter(item => 
+        advancedFilters.difficulty!.includes(item.recipe.difficulty)
+      );
+    }
+
+    if (advancedFilters.cuisine && advancedFilters.cuisine.length > 0) {
+      filtered = filtered.filter(item => {
+        const recipeTags = item.recipe.tags || [];
+        return advancedFilters.cuisine!.some(cuisine => 
+          recipeTags.some(tag => tag.toLowerCase().includes(cuisine.toLowerCase()))
+        );
+      });
+    }
+
+    if (advancedFilters.diet && advancedFilters.diet.length > 0) {
+      filtered = filtered.filter(item => {
+        const recipeTags = item.recipe.tags || [];
+        return advancedFilters.diet!.some(diet => 
+          recipeTags.includes(diet)
+        );
+      });
+    }
+
+    if (advancedFilters.missingOne) {
+      filtered = filtered.filter(item => item.missingIngredients.length === 1);
     }
 
     // Sort by match percentage (highest first)
     return filtered.sort((a, b) => b.match - a.match);
-  }, [recipesWithMatches, activeFilter]);
+  }, [recipesWithMatches, activeFilter, advancedFilters, favoriteRecipeIds]);
 
   if (inventory.length === 0) {
     return (
@@ -80,13 +127,33 @@ export default function RecipesPage() {
     );
   }
 
+  const advancedFilterCount = 
+    (advancedFilters.timeRange ? 1 : 0) +
+    (advancedFilters.difficulty?.length || 0) +
+    (advancedFilters.cuisine?.length || 0) +
+    (advancedFilters.diet?.length || 0) +
+    (advancedFilters.missingOne ? 1 : 0);
+
   return (
     <div className="p-4 pb-6 max-w-md mx-auto">
       <h1 className="text-2xl font-bold text-gray-800 mb-4">Recepten</h1>
       
       <div className="mb-4">
-        <RecipeFilters activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+        <RecipeFilters 
+          activeFilter={activeFilter} 
+          onFilterChange={setActiveFilter}
+          onOpenAdvancedFilters={() => setIsFilterModalOpen(true)}
+          advancedFilterCount={advancedFilterCount}
+        />
       </div>
+
+      <RecipeFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        filters={advancedFilters}
+        onApplyFilters={setAdvancedFilters}
+        onClearFilters={() => setAdvancedFilters({})}
+      />
 
       {filteredRecipes.length === 0 ? (
         <div className="bg-white rounded-lg p-8 text-center shadow-sm">

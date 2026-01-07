@@ -40,3 +40,5 @@ Ga naar de inventory pagina en voeg een item toe. Het zou nu opgeslagen moeten w
 - Wanneer je later authenticatie toevoegt, moet je de RLS policies aanpassen om per gebruiker te filteren
 
 
+
+

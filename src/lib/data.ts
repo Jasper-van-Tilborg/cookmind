@@ -1,4 +1,4 @@
-import { InventoryItem, Recipe } from '@/src/types';
+import { InventoryItem, Recipe, UserRecipe } from '@/src/types';
 
 export const mockInventory: InventoryItem[] = [
   { id: 1, name: 'Tomaat', category: 'Groente', quantity: 4 },
@@ -140,6 +140,145 @@ export const mockRecipes: Recipe[] = [
     tags: [],
   },
 ];
+
+export const mockUserRecipes: UserRecipe[] = [
+  {
+    id: 101,
+    userId: 'user-1',
+    username: 'chef_sarah',
+    title: 'Homemade Pasta Carbonara',
+    description: 'Mijn geheime recept voor de perfecte carbonara! Romig, krokant en vol van smaak.',
+    prepTime: 30,
+    servings: 4,
+    difficulty: 'Gemiddeld',
+    ingredients: [
+      { name: 'Pasta', amount: 400, unit: 'g' },
+      { name: 'Spek', amount: 200, unit: 'g' },
+      { name: 'Eieren', amount: 4, unit: 'stuk' },
+      { name: 'Parmezaanse kaas', amount: 100, unit: 'g' },
+    ],
+    steps: [
+      'Kook de pasta al dente',
+      'Bak spek krokant',
+      'Meng eieren met kaas',
+      'Combineer alles en serveer direct',
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
+    isVideo: false,
+    createdAt: new Date('2024-01-15'),
+    tags: ['italiaans', 'snel'],
+  },
+  {
+    id: 102,
+    userId: 'user-2',
+    username: 'vegan_chef',
+    title: 'Vegan Buddha Bowl',
+    description: 'Kleurrijke bowl vol met groenten, quinoa en tahini dressing. Perfect voor lunch!',
+    prepTime: 25,
+    servings: 2,
+    difficulty: 'Makkelijk',
+    ingredients: [
+      { name: 'Quinoa', amount: 150, unit: 'g' },
+      { name: 'Zoete aardappel', amount: 2, unit: 'stuk' },
+      { name: 'Kikkererwten', amount: 200, unit: 'g' },
+      { name: 'Spinazie', amount: 100, unit: 'g' },
+    ],
+    steps: [
+      'Kook quinoa',
+      'Rooster zoete aardappel',
+      'Bak kikkererwten krokant',
+      'Arrangeer in bowl met dressing',
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
+    videoUrl: 'https://example.com/video/buddha-bowl.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800',
+    isVideo: true,
+    createdAt: new Date('2024-01-20'),
+    tags: ['vegan', 'gezond'],
+  },
+  {
+    id: 103,
+    userId: 'user-3',
+    username: 'baking_master',
+    title: 'Chocolate Chip Cookies',
+    description: 'De beste chocolate chip cookies ooit! Zacht van binnen, krokant van buiten.',
+    prepTime: 45,
+    servings: 24,
+    difficulty: 'Makkelijk',
+    ingredients: [
+      { name: 'Bloem', amount: 300, unit: 'g' },
+      { name: 'Boter', amount: 200, unit: 'g' },
+      { name: 'Bruine suiker', amount: 150, unit: 'g' },
+      { name: 'Chocolade chips', amount: 200, unit: 'g' },
+    ],
+    steps: [
+      'Meng boter en suiker',
+      'Voeg bloem toe',
+      'Meng chocolade chips erdoor',
+      'Bak 12 minuten op 180°C',
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=800',
+    isVideo: false,
+    createdAt: new Date('2024-01-18'),
+    tags: ['zoet', 'bakken'],
+  },
+  {
+    id: 104,
+    userId: 'user-4',
+    username: 'spice_lover',
+    title: 'Thai Green Curry',
+    description: 'Authentieke Thaise groene curry met kip en kokosmelk. Pittig en vol van smaak!',
+    prepTime: 40,
+    servings: 4,
+    difficulty: 'Gemiddeld',
+    ingredients: [
+      { name: 'Kipfilet', amount: 500, unit: 'g' },
+      { name: 'Groene curry pasta', amount: 3, unit: 'el' },
+      { name: 'Kokosmelk', amount: 400, unit: 'ml' },
+      { name: 'Aubergine', amount: 2, unit: 'stuk' },
+    ],
+    steps: [
+      'Bak curry pasta',
+      'Voeg kip toe',
+      'Giet kokosmelk erbij',
+      'Laat sudderen en serveer met rijst',
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800',
+    videoUrl: 'https://example.com/video/green-curry.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800',
+    isVideo: true,
+    createdAt: new Date('2024-01-22'),
+    tags: ['thais', 'pittig'],
+  },
+  {
+    id: 105,
+    userId: 'user-5',
+    username: 'healthy_eats',
+    title: 'Avocado Toast Deluxe',
+    description: 'Niet zomaar avocado toast! Met ei, feta en pomegranate. Perfect voor brunch.',
+    prepTime: 15,
+    servings: 2,
+    difficulty: 'Makkelijk',
+    ingredients: [
+      { name: 'Brood', amount: 4, unit: 'sneetjes' },
+      { name: 'Avocado', amount: 2, unit: 'stuk' },
+      { name: 'Eieren', amount: 2, unit: 'stuk' },
+      { name: 'Feta', amount: 100, unit: 'g' },
+    ],
+    steps: [
+      'Rooster brood',
+      'Mash avocado',
+      'Bak eieren',
+      'Arrangeer en serveer',
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=800',
+    isVideo: false,
+    createdAt: new Date('2024-01-25'),
+    tags: ['snel', 'gezond'],
+  },
+];
+
+
 
 
 

@@ -1,4 +1,4 @@
-import { InventoryItem } from '@/src/types';
+import { InventoryItem, UserRecipe, RecipeIngredient } from '@/src/types';
 import { supabase } from './supabase';
 import { Database } from './database.types';
 
@@ -251,6 +251,336 @@ export const storage = {
       if (typeof window !== 'undefined') {
         localStorage.removeItem(STORAGE_KEY);
       }
+    }
+  },
+
+  // Favorites functions
+  getFavorites: async (userId: string): Promise<number[]> => {
+    if (!supabase) {
+      // Fallback to LocalStorage
+      if (typeof window === 'undefined') return [];
+      try {
+        const data = localStorage.getItem(`${STORAGE_KEY}-favorites-${userId}`);
+        return data ? JSON.parse(data) : [];
+      } catch (error) {
+        console.error('Error reading favorites from localStorage:', error);
+        return [];
+      }
+    }
+
+    try {
+      const { data, error } = await supabase!
+        .from('favorites')
+        .select('recipe_id')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.warn('Supabase error, falling back to localStorage:', error);
+        const localData = localStorage.getItem(`${STORAGE_KEY}-favorites-${userId}`);
+        return localData ? JSON.parse(localData) : [];
+      }
+
+      return data ? data.map((item: { recipe_id: number }) => item.recipe_id) : [];
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+      const localData = localStorage.getItem(`${STORAGE_KEY}-favorites-${userId}`);
+      return localData ? JSON.parse(localData) : [];
+    }
+  },
+
+  addFavorite: async (userId: string, recipeId: number): Promise<void> => {
+    if (!supabase) {
+      // Fallback to LocalStorage
+      if (typeof window === 'undefined') return;
+      try {
+        const key = `${STORAGE_KEY}-favorites-${userId}`;
+        const existing = localStorage.getItem(key);
+        const favorites = existing ? JSON.parse(existing) : [];
+        if (!favorites.includes(recipeId)) {
+          favorites.push(recipeId);
+          localStorage.setItem(key, JSON.stringify(favorites));
+        }
+      } catch (error) {
+        console.error('Error saving favorite to localStorage:', error);
+      }
+      return;
+    }
+
+    try {
+      const { error } = await supabase!
+        .from('favorites')
+        .insert({
+          user_id: userId,
+          recipe_id: recipeId,
+        } as any);
+
+      if (error) {
+        // If it's a duplicate, that's okay
+        if (error.code !== '23505') {
+          console.warn('Supabase error, falling back to localStorage:', error);
+          const key = `${STORAGE_KEY}-favorites-${userId}`;
+          const existing = localStorage.getItem(key);
+          const favorites = existing ? JSON.parse(existing) : [];
+          if (!favorites.includes(recipeId)) {
+            favorites.push(recipeId);
+            localStorage.setItem(key, JSON.stringify(favorites));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error adding favorite:', error);
+      const key = `${STORAGE_KEY}-favorites-${userId}`;
+      const existing = localStorage.getItem(key);
+      const favorites = existing ? JSON.parse(existing) : [];
+      if (!favorites.includes(recipeId)) {
+        favorites.push(recipeId);
+        localStorage.setItem(key, JSON.stringify(favorites));
+      }
+    }
+  },
+
+  removeFavorite: async (userId: string, recipeId: number): Promise<void> => {
+    if (!supabase) {
+      // Fallback to LocalStorage
+      if (typeof window === 'undefined') return;
+      try {
+        const key = `${STORAGE_KEY}-favorites-${userId}`;
+        const existing = localStorage.getItem(key);
+        if (existing) {
+          const favorites = JSON.parse(existing).filter((id: number) => id !== recipeId);
+          localStorage.setItem(key, JSON.stringify(favorites));
+        }
+      } catch (error) {
+        console.error('Error removing favorite from localStorage:', error);
+      }
+      return;
+    }
+
+    try {
+      const { error } = await supabase!
+        .from('favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('recipe_id', recipeId);
+
+      if (error) {
+        console.warn('Supabase error, falling back to localStorage:', error);
+        const key = `${STORAGE_KEY}-favorites-${userId}`;
+        const existing = localStorage.getItem(key);
+        if (existing) {
+          const favorites = JSON.parse(existing).filter((id: number) => id !== recipeId);
+          localStorage.setItem(key, JSON.stringify(favorites));
+        }
+      }
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      const key = `${STORAGE_KEY}-favorites-${userId}`;
+      const existing = localStorage.getItem(key);
+      if (existing) {
+        const favorites = JSON.parse(existing).filter((id: number) => id !== recipeId);
+        localStorage.setItem(key, JSON.stringify(favorites));
+      }
+    }
+  },
+
+  isFavorite: async (userId: string, recipeId: number): Promise<boolean> => {
+    const favorites = await storage.getFavorites(userId);
+    return favorites.includes(recipeId);
+  },
+
+  // User Recipes functions
+  getUserRecipes: async (userId?: string, limit: number = 50): Promise<UserRecipe[]> => {
+    if (!supabase) {
+      // Fallback to LocalStorage
+      if (typeof window === 'undefined') return [];
+      try {
+        const data = localStorage.getItem(`${STORAGE_KEY}-user-recipes`);
+        if (!data) return [];
+        const recipes = JSON.parse(data) as UserRecipe[];
+        return userId 
+          ? recipes.filter(r => r.userId === userId).slice(0, limit)
+          : recipes.slice(0, limit);
+      } catch (error) {
+        console.error('Error reading user recipes from localStorage:', error);
+        return [];
+      }
+    }
+
+    try {
+      let query = supabase!
+        .from('user_recipes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.warn('Supabase error, falling back to localStorage:', error);
+        const localData = localStorage.getItem(`${STORAGE_KEY}-user-recipes`);
+        return localData ? JSON.parse(localData) : [];
+      }
+
+      if (!data) return [];
+
+      // Get usernames from auth.users (simplified - in production you'd have a users table)
+      return data.map((item: Database['public']['Tables']['user_recipes']['Row']) => {
+        const ingredients = item.ingredients as unknown as RecipeIngredient[];
+        const steps = item.steps as unknown as string[];
+
+        return {
+          id: parseInt(item.id.slice(0, 8), 16) || Date.now(), // Convert UUID to number for compatibility
+          userId: item.user_id,
+          username: `user_${item.user_id.slice(0, 8)}`, // Temporary username generation
+          title: item.title,
+          description: item.description,
+          prepTime: item.prep_time,
+          servings: item.servings,
+          difficulty: item.difficulty as 'Makkelijk' | 'Gemiddeld' | 'Moeilijk',
+          ingredients,
+          steps,
+          imageUrl: item.image_url || undefined,
+          videoUrl: item.video_url || undefined,
+          thumbnailUrl: item.thumbnail_url || undefined,
+          tags: item.tags || [],
+          createdAt: new Date(item.created_at),
+          isVideo: !!item.video_url,
+        } as UserRecipe;
+      });
+    } catch (error) {
+      console.error('Error fetching user recipes:', error);
+      const localData = localStorage.getItem(`${STORAGE_KEY}-user-recipes`);
+      return localData ? JSON.parse(localData) : [];
+    }
+  },
+
+  createUserRecipe: async (recipe: Omit<UserRecipe, 'id' | 'createdAt'>): Promise<UserRecipe> => {
+    if (!supabase) {
+      // Fallback to LocalStorage
+      const newRecipe: UserRecipe = {
+        ...recipe,
+        id: Date.now(),
+        createdAt: new Date(),
+      };
+      const existing = localStorage.getItem(`${STORAGE_KEY}-user-recipes`);
+      const recipes = existing ? JSON.parse(existing) : [];
+      recipes.push(newRecipe);
+      localStorage.setItem(`${STORAGE_KEY}-user-recipes`, JSON.stringify(recipes));
+      return newRecipe;
+    }
+
+    try {
+      const { data, error } = await supabase!
+        .from('user_recipes')
+        .insert({
+          user_id: recipe.userId,
+          title: recipe.title,
+          description: recipe.description,
+          prep_time: recipe.prepTime,
+          servings: recipe.servings,
+          difficulty: recipe.difficulty,
+          ingredients: recipe.ingredients as any,
+          steps: recipe.steps as any,
+          image_url: recipe.imageUrl || null,
+          video_url: recipe.videoUrl || null,
+          thumbnail_url: recipe.thumbnailUrl || null,
+          tags: recipe.tags || [],
+        } as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('No data returned');
+
+      const item = data as Database['public']['Tables']['user_recipes']['Row'];
+      const ingredients = item.ingredients as unknown as RecipeIngredient[];
+      const steps = item.steps as unknown as string[];
+
+      return {
+        id: parseInt(item.id.slice(0, 8), 16) || Date.now(),
+        userId: item.user_id,
+        username: recipe.username,
+        title: item.title,
+        description: item.description,
+        prepTime: item.prep_time,
+        servings: item.servings,
+        difficulty: item.difficulty as 'Makkelijk' | 'Gemiddeld' | 'Moeilijk',
+        ingredients,
+        steps,
+        imageUrl: item.image_url || undefined,
+        videoUrl: item.video_url || undefined,
+        thumbnailUrl: item.thumbnail_url || undefined,
+        tags: item.tags || [],
+        createdAt: new Date(item.created_at),
+        isVideo: !!item.video_url,
+      } as UserRecipe;
+    } catch (error) {
+      console.error('Error creating user recipe:', error);
+      // Fallback
+      const newRecipe: UserRecipe = {
+        ...recipe,
+        id: Date.now(),
+        createdAt: new Date(),
+      };
+      const existing = localStorage.getItem(`${STORAGE_KEY}-user-recipes`);
+      const recipes = existing ? JSON.parse(existing) : [];
+      recipes.push(newRecipe);
+      localStorage.setItem(`${STORAGE_KEY}-user-recipes`, JSON.stringify(recipes));
+      return newRecipe;
+    }
+  },
+
+  getUserRecipeById: async (id: string): Promise<UserRecipe | null> => {
+    if (!supabase) {
+      const localData = localStorage.getItem(`${STORAGE_KEY}-user-recipes`);
+      if (!localData) return null;
+      const recipes = JSON.parse(localData) as UserRecipe[];
+      return recipes.find(r => r.id.toString() === id) || null;
+    }
+
+    try {
+      const { data, error } = await supabase!
+        .from('user_recipes')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.warn('Supabase error:', error);
+        return null;
+      }
+
+      if (!data) return null;
+
+      const item = data as Database['public']['Tables']['user_recipes']['Row'];
+      const ingredients = item.ingredients as unknown as RecipeIngredient[];
+      const steps = item.steps as unknown as string[];
+
+      return {
+        id: parseInt(item.id.slice(0, 8), 16) || Date.now(),
+        userId: item.user_id,
+        username: `user_${item.user_id.slice(0, 8)}`,
+        title: item.title,
+        description: item.description,
+        prepTime: item.prep_time,
+        servings: item.servings,
+        difficulty: item.difficulty as 'Makkelijk' | 'Gemiddeld' | 'Moeilijk',
+        ingredients,
+        steps,
+        imageUrl: item.image_url || undefined,
+        videoUrl: item.video_url || undefined,
+        thumbnailUrl: item.thumbnail_url || undefined,
+        tags: item.tags || [],
+        createdAt: new Date(item.created_at),
+        isVideo: !!item.video_url,
+      } as UserRecipe;
+    } catch (error) {
+      console.error('Error fetching user recipe:', error);
+      return null;
     }
   },
 };

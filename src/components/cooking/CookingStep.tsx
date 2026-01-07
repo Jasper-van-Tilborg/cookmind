@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, ChefHat } from 'lucide-react';
+import { Clock, ChefHat, Timer as TimerIcon } from 'lucide-react';
 
 interface CookingStepProps {
   stepNumber: number;
@@ -8,6 +8,7 @@ interface CookingStepProps {
   ingredients?: string[];
   timeNeeded?: number; // in minuten
   isActive: boolean;
+  onStartTimer?: (minutes: number) => void;
 }
 
 export default function CookingStep({
@@ -16,6 +17,7 @@ export default function CookingStep({
   ingredients = [],
   timeNeeded,
   isActive,
+  onStartTimer,
 }: CookingStepProps) {
   if (!isActive) return null;
 
@@ -51,15 +53,27 @@ export default function CookingStep({
 
         {/* Timer */}
         {timeNeeded && timeNeeded > 0 && (
-          <div className="flex items-center justify-center gap-2 text-purple-600 mb-4">
-            <Clock size={20} />
-            <span className="font-semibold">{timeNeeded} minuten</span>
+          <div className="flex flex-col items-center gap-3 mb-4">
+            <div className="flex items-center justify-center gap-2 text-purple-600">
+              <Clock size={20} />
+              <span className="font-semibold">{timeNeeded} minuten</span>
+            </div>
+            {onStartTimer && (
+              <button
+                onClick={() => onStartTimer(timeNeeded)}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors touch-target"
+              >
+                <TimerIcon size={20} />
+                Start Timer
+              </button>
+            )}
           </div>
         )}
       </div>
     </div>
   );
 }
+
 
 
 
