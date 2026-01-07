@@ -86,24 +86,25 @@ export default function AITweaker({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Sparkles size={20} className="text-purple-600" />
-            <h2 className="text-lg font-semibold text-gray-800">AI Tweaker</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 safe-area-inset">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-2xl h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        {/* Header - Mobile optimized */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b bg-white sticky top-0 z-10 safe-area-top">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Sparkles size={20} className="text-purple-600 sm:w-5 sm:h-5" />
+            <h2 className="text-base sm:text-lg font-semibold text-gray-800">AI Tweaker</h2>
           </div>
           <button
             onClick={handleClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-2 active:bg-gray-100 rounded-lg transition-colors touch-target flex-shrink-0"
+            aria-label="Sluiten"
           >
-            <X size={20} />
+            <X size={22} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Content - Mobile optimized scrolling */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 sm:space-y-5 safe-area-bottom">
           {!previewRecipe ? (
             <>
               <div>
@@ -117,8 +118,8 @@ export default function AITweaker({
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Beschrijf hoe je het recept wilt aanpassen..."
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  rows={4}
+                  className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-base"
+                  rows={5}
                   disabled={loading}
                 />
               </div>
@@ -132,7 +133,7 @@ export default function AITweaker({
               <button
                 onClick={handleTweak}
                 disabled={loading || !prompt.trim()}
-                className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-purple-600 text-white py-3.5 sm:py-3 px-4 rounded-lg font-medium active:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 touch-target text-base"
               >
                 {loading ? (
                   <>
@@ -187,16 +188,16 @@ export default function AITweaker({
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t">
+              <div className="flex gap-3 pt-4 border-t sticky bottom-0 bg-white pb-2">
                 <button
                   onClick={handleClose}
-                  className="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 active:bg-gray-50 transition-colors touch-target text-base font-medium"
                 >
                   Annuleren
                 </button>
                 <button
                   onClick={handleAccept}
-                  className="flex-1 py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 px-4 bg-purple-600 text-white rounded-lg active:bg-purple-700 transition-colors flex items-center justify-center gap-2 touch-target text-base font-medium"
                 >
                   <Check size={18} />
                   <span>Accepteer</span>
@@ -209,4 +210,5 @@ export default function AITweaker({
     </div>
   );
 }
+
 

@@ -131,23 +131,24 @@ export default function SubstitutionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-800">
-            AI Substitutie voor {missingIngredient}
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 safe-area-inset">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-lg h-[85vh] sm:h-auto sm:max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+        {/* Header - Mobile optimized */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b bg-white sticky top-0 z-10 safe-area-top">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 pr-2">
+            AI Substitutie voor <span className="text-purple-600">{missingIngredient}</span>
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-2 active:bg-gray-100 rounded-lg transition-colors touch-target flex-shrink-0"
+            aria-label="Sluiten"
           >
-            <X size={20} />
+            <X size={22} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Content - Mobile optimized scrolling */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 safe-area-bottom">
           {error ? (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-700">{error}</p>

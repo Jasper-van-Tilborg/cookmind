@@ -36,3 +36,4 @@ export default function InventoryItem({ item, onDelete }: InventoryItemProps) {
 
 
 
+

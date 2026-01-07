@@ -98,9 +98,6 @@ export default function InventoryPage() {
     }
   };
 
-  const handleBarcodeScan = async (item: Omit<InventoryItemType, 'id'>) => {
-    await handleAddItem(item);
-  };
 
   return (
     <div className="p-4 pb-6 max-w-md mx-auto">
@@ -178,7 +175,6 @@ export default function InventoryPage() {
       <BarcodeScanner
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
-        onScanSuccess={handleBarcodeScan}
       />
     </div>
   );
