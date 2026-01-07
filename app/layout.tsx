@@ -30,9 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
         <AuthProvider>
-          <div className="pb-16 min-h-screen">
-            {children}
-          </div>
+          {children}
           <ConditionalBottomNav />
         </AuthProvider>
       </body>

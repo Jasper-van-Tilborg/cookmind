@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { ArrowLeft, Plus, Minus } from 'lucide-react';
 import { BarcodeProduct, NutritionFacts } from '@/src/lib/barcode';
+import { calculateNutritionForQuantity } from '@/src/lib/nutrition';
 
 interface ProductDetailProps {
   product: BarcodeProduct;
@@ -26,7 +27,40 @@ export default function ProductDetail({ product, onAdd, onCancel }: ProductDetai
     onAdd(quantity, unit);
   };
 
-  const nutrition = product.nutritionFacts;
+  // Bereken voedingswaarden voor geselecteerde hoeveelheid
+  const calculatedNutrition = useMemo(() => {
+    if (!product.nutritionFacts) return undefined;
+    
+    // Converteer quantity naar gram voor berekening
+    // Open Food Facts voedingswaarden zijn altijd per 100g
+    let quantityInGrams = quantity;
+    
+    if (unit === 'kg') {
+      quantityInGrams = quantity * 1000; // kg naar gram
+    } else if (unit === 'g') {
+      quantityInGrams = quantity; // al in gram
+    } else if (unit === 'ml' || unit === 'l') {
+      // Voor vloeistoffen: 1ml ≈ 1g (water-based), maar dit is een vereenvoudiging
+      quantityInGrams = unit === 'l' ? quantity * 1000 : quantity;
+    } else {
+      // Voor "stuk", "fles", "pak", "doos" etc. gebruiken we servingSize als referentie
+      // Als er een servingSize is, gebruiken we die als basis
+      if (product.servingSize && product.servingUnit) {
+        // Probeer servingSize te converteren naar gram
+        const servingInGrams = product.servingUnit === 'g' ? product.servingSize :
+                              product.servingUnit === 'kg' ? product.servingSize * 1000 :
+                              product.servingSize; // fallback
+        quantityInGrams = (quantity / product.servingSize) * servingInGrams;
+      } else {
+        // Geen serving size beschikbaar, gebruik quantity direct (vereenvoudiging)
+        quantityInGrams = quantity;
+      }
+    }
+
+    return calculateNutritionForQuantity(product.nutritionFacts, quantityInGrams, 100);
+  }, [product.nutritionFacts, product.servingSize, product.servingUnit, quantity, unit]);
+
+  const nutrition = calculatedNutrition || product.nutritionFacts;
 
   return (
     <div className="min-h-screen bg-gray-50 safe-area-inset">
@@ -76,22 +110,33 @@ export default function ProductDetail({ product, onAdd, onCancel }: ProductDetai
           {/* Macronutriënten */}
           {nutrition && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Voedingswaarden</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Voedingswaarden</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Per {quantity} {unit}
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-green-700">{nutrition.calories}</div>
+                  <div className="text-2xl font-bold text-green-700">
+                    {nutrition.calories !== undefined ? Math.round(nutrition.calories) : '-'}
+                  </div>
                   <div className="text-xs text-green-600 font-medium">Calories</div>
                 </div>
                 <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-pink-700">{nutrition.carbs.toFixed(1)}</div>
+                  <div className="text-2xl font-bold text-pink-700">
+                    {nutrition.carbs !== undefined ? nutrition.carbs.toFixed(1) : '-'}
+                  </div>
                   <div className="text-xs text-pink-600 font-medium">Carbs (g)</div>
                 </div>
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-blue-700">{nutrition.protein.toFixed(1)}</div>
+                  <div className="text-2xl font-bold text-blue-700">
+                    {nutrition.protein !== undefined ? nutrition.protein.toFixed(1) : '-'}
+                  </div>
                   <div className="text-xs text-blue-600 font-medium">Protein (g)</div>
                 </div>
                 <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-orange-700">{nutrition.fat.toFixed(1)}</div>
+                  <div className="text-2xl font-bold text-orange-700">
+                    {nutrition.fat !== undefined ? nutrition.fat.toFixed(1) : '-'}
+                  </div>
                   <div className="text-xs text-orange-600 font-medium">Fat (g)</div>
                 </div>
               </div>
@@ -149,7 +194,10 @@ export default function ProductDetail({ product, onAdd, onCancel }: ProductDetai
           {/* Uitgebreide Voedingswaarden */}
           {nutrition && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Uitgebreide voedingswaarden</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Uitgebreide voedingswaarden</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Per {quantity} {unit}
+              </p>
               <div className="bg-white border-2 border-gray-200 rounded-lg p-4">
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   {nutrition.fiber !== undefined && (
@@ -167,61 +215,61 @@ export default function ProductDetail({ product, onAdd, onCancel }: ProductDetai
                   {nutrition.sodium !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Natrium:</span>
-                      <span className="font-medium text-gray-800">{nutrition.sodium.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.sodium !== undefined ? Math.round(nutrition.sodium) : '-'} mg</span>
                     </div>
                   )}
                   {nutrition.calcium !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Calcium:</span>
-                      <span className="font-medium text-gray-800">{nutrition.calcium.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.calcium !== undefined ? Math.round(nutrition.calcium) : '-'} mg</span>
                     </div>
                   )}
                   {nutrition.iron !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Ijzer:</span>
-                      <span className="font-medium text-gray-800">{nutrition.iron.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.iron !== undefined ? Math.round(nutrition.iron) : '-'} mg</span>
                     </div>
                   )}
                   {nutrition.magnesium !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Magnesium:</span>
-                      <span className="font-medium text-gray-800">{nutrition.magnesium.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.magnesium !== undefined ? Math.round(nutrition.magnesium) : '-'} mg</span>
                     </div>
                   )}
                   {nutrition.potassium !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Kalium:</span>
-                      <span className="font-medium text-gray-800">{nutrition.potassium.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.potassium !== undefined ? Math.round(nutrition.potassium) : '-'} mg</span>
                     </div>
                   )}
                   {nutrition.zinc !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Zink:</span>
-                      <span className="font-medium text-gray-800">{nutrition.zinc.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.zinc !== undefined ? Math.round(nutrition.zinc) : '-'} mg</span>
                     </div>
                   )}
                   {nutrition.phosphorus !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Fosfor:</span>
-                      <span className="font-medium text-gray-800">{nutrition.phosphorus.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.phosphorus !== undefined ? Math.round(nutrition.phosphorus) : '-'} mg</span>
                     </div>
                   )}
                   {nutrition.copper !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Koper:</span>
-                      <span className="font-medium text-gray-800">{nutrition.copper.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.copper !== undefined ? Math.round(nutrition.copper) : '-'} mg</span>
                     </div>
                   )}
                   {nutrition.selenium !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Selenium:</span>
-                      <span className="font-medium text-gray-800">{nutrition.selenium.toFixed(0)} mcg</span>
+                      <span className="font-medium text-gray-800">{nutrition.selenium !== undefined ? Math.round(nutrition.selenium) : '-'} mcg</span>
                     </div>
                   )}
                   {nutrition.vitaminC !== undefined && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Vitamine C:</span>
-                      <span className="font-medium text-gray-800">{nutrition.vitaminC.toFixed(0)} mg</span>
+                      <span className="font-medium text-gray-800">{nutrition.vitaminC !== undefined ? Math.round(nutrition.vitaminC) : '-'} mg</span>
                     </div>
                   )}
                 </div>

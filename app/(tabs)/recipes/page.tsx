@@ -65,7 +65,7 @@ export default function RecipesPage() {
 
   if (inventory.length === 0) {
     return (
-      <div className="p-4 pb-6 max-w-md mx-auto">
+      <div className="p-4 pb-20 max-w-md mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Recepten</h1>
         <div className="bg-white rounded-lg p-8 text-center shadow-sm">
           <p className="text-gray-600 mb-2">Voeg eerst ingrediënten toe aan je voorraad</p>

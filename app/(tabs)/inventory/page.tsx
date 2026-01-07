@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Package, ScanLine } from 'lucide-react';
 import InventoryItem from '@/src/components/inventory/InventoryItem';
-import AddItemModal from '@/src/components/inventory/AddItemModal';
+import ProductSearchModal from '@/src/components/inventory/ProductSearchModal';
 import InventoryCTA from '@/src/components/inventory/InventoryCTA';
 import BarcodeScanner from '@/src/components/inventory/BarcodeScanner';
 import { InventoryItem as InventoryItemType } from '@/src/types';
@@ -13,7 +13,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItemType[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
@@ -45,20 +45,6 @@ export default function InventoryPage() {
     }
   }, [user]);
 
-  const handleAddItem = async (newItem: Omit<InventoryItemType, 'id'>) => {
-    try {
-      const addedItem = await storage.addInventoryItem(newItem, user?.id);
-      setItems([...items, addedItem]);
-    } catch (error) {
-      console.error('Error adding item:', error);
-      // Fallback: add locally
-      const item: InventoryItemType = {
-        ...newItem,
-        id: Date.now(),
-      };
-      setItems([...items, item]);
-    }
-  };
 
   const handleDeleteItem = async (id: number) => {
     try {
@@ -100,7 +86,7 @@ export default function InventoryPage() {
 
 
   return (
-    <div className="p-4 pb-6 max-w-md mx-auto">
+    <div className="p-4 pb-20 max-w-md mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Voorraad</h1>
         <div className="flex gap-2">
@@ -112,9 +98,9 @@ export default function InventoryPage() {
             <ScanLine size={24} />
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setIsSearchModalOpen(true)}
             className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            aria-label="Item toevoegen"
+            aria-label="Product zoeken"
           >
             <Plus size={24} />
           </button>
@@ -166,10 +152,9 @@ export default function InventoryPage() {
         </div>
       )}
 
-      <AddItemModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAdd={handleAddItem}
+      <ProductSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
       />
 
       <BarcodeScanner

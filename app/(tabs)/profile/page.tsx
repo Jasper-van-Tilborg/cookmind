@@ -14,7 +14,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="p-4 pb-6 max-w-md mx-auto">
+    <div className="p-4 pb-20 max-w-md mx-auto">
       <h1 className="text-2xl font-bold text-gray-800 mb-4">Profiel</h1>
       
       {user && (
