@@ -42,3 +42,4 @@ Ga naar de inventory pagina en voeg een item toe. Het zou nu opgeslagen moeten w
 
 
 
+
