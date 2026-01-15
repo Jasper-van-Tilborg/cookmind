@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import BackButton from '@/components/auth/BackButton';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -137,5 +137,28 @@ export default function VerifyEmailPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="relative flex min-h-screen items-center justify-center bg-[#FAFAF7] px-6 py-8">
+        <div className="absolute left-6 top-8">
+          <BackButton />
+        </div>
+        <div className="mx-auto w-full max-w-md text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#1F6F54] border-t-transparent"></div>
+          </div>
+          <h1 className="mb-2 text-3xl font-bold text-[#1F6F54]">E-mail verifiëren...</h1>
+          <p className="text-base text-[#2B2B2B]">
+            Je e-mailadres wordt geverifieerd.
+          </p>
+        </div>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

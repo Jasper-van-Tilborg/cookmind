@@ -1,10 +1,11 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import BackButton from '@/components/auth/BackButton';
 
-export default function CheckEmailPage() {
+function CheckEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || 'je e-mailadres';
 
@@ -55,5 +56,22 @@ export default function CheckEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="relative flex min-h-screen items-center justify-center bg-[#FAFAF7] px-6 py-8">
+        <div className="mx-auto w-full max-w-md text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#1F6F54] border-t-transparent"></div>
+          </div>
+          <p className="text-base text-[#2B2B2B]">Laden...</p>
+        </div>
+      </div>
+    }>
+      <CheckEmailContent />
+    </Suspense>
   );
 }
