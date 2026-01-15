@@ -1,55 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* CookMind AI Brand Colors */
+  --color-primary: #1F6F54;
+  --color-background: #FAFAF7;
+  --color-gradient: #9FC5B5;
+  --color-text-primary: #2B2B2B;
+  --color-inactive: #E5E5E0;
+  --color-button-text: #FAFAF7;
+  
+  /* Legacy colors for compatibility */
+  --background: #FAFAF7;
+  --foreground: #2B2B2B;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-text-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* Mobile-first optimizations */
-.touch-target {
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Safe area insets for mobile devices (notches, etc.) */
-.safe-area-inset {
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-}
-
-.safe-area-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* Prevent text selection on buttons for better mobile UX */
-button {
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }

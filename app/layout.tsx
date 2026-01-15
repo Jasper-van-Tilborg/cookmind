@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/src/contexts/AuthContext";
-import ConditionalBottomNav from "@/src/components/navigation/ConditionalBottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CookMind AI",
-  description: "AI-powered recipe matching based on your inventory",
+  title: "CookMind AI - Van voorraad naar perfect recept",
+  description: "De revolutionaire app die jouw voorraad transformeert in heerlijke recepten met AI.",
 };
 
 export default function RootLayout({
@@ -25,14 +23,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="nl">
+    <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          {children}
-          <ConditionalBottomNav />
-        </AuthProvider>
+        {children}
       </body>
     </html>
   );
