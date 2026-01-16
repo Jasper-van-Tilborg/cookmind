@@ -65,7 +65,7 @@ export default function OnboardingFlow() {
     } else {
       // Complete onboarding
       sessionStorage.setItem('onboarding_completed', 'true');
-      router.push('/');
+      router.push('/login');
     }
   };
 

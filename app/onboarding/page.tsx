@@ -13,7 +13,7 @@ export default function OnboardingPage() {
     // Check if onboarding already completed in this session
     const completed = sessionStorage.getItem('onboarding_completed');
     if (completed === 'true') {
-      router.push('/');
+      router.push('/login');
     }
   }, [router]);
 

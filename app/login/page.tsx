@@ -68,13 +68,8 @@ export default function LoginPage() {
           return;
         }
 
-        // Check if onboarding is needed
-        const onboardingCompleted = sessionStorage.getItem('onboarding_completed');
-        if (onboardingCompleted !== 'true') {
-          router.push('/onboarding');
-        } else {
-          router.push('/');
-        }
+        // User is logged in and verified, redirect to home
+        router.push('/');
       }
     } catch (error) {
       setErrors({ general: 'Er is iets misgegaan. Probeer het opnieuw.' });
