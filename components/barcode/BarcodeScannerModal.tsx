@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import VoorraadHeader from '@/components/voorraad/VoorraadHeader';
 import ScannerView from './ScannerView';
-import BottomNav from '@/components/navigation/BottomNav';
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProductAdded?: () => void;
+  onOpenBasisvoorraad?: () => void;
+  onOpenAddProduct?: () => void;
 }
 
 interface ProductData {
@@ -25,6 +26,8 @@ export default function BarcodeScannerModal({
   isOpen,
   onClose,
   onProductAdded,
+  onOpenBasisvoorraad,
+  onOpenAddProduct,
 }: BarcodeScannerModalProps) {
   const supabase = createClient();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -89,14 +92,21 @@ export default function BarcodeScannerModal({
     }
   };
 
-  const handleBarcodeClick = () => {
-    // Close modal when clicking barcode button again
-    onClose();
+  const handleCubeClick = () => {
+    if (onOpenBasisvoorraad) {
+      onOpenBasisvoorraad();
+    } else {
+      onClose();
+    }
   };
 
   const handlePlusClick = () => {
-    // TODO: Implement add product manually
-    console.log('Add product manually clicked');
+    if (onOpenAddProduct) {
+      onOpenAddProduct();
+    } else {
+      // TODO: Implement add product manually
+      console.log('Add product manually clicked');
+    }
   };
 
   return (
@@ -106,8 +116,8 @@ export default function BarcodeScannerModal({
           {/* Header - Sticky, no animation */}
           <div className="sticky top-0 z-10 bg-[#2B2B2B]">
             <VoorraadHeader
-              onCubeClick={onClose}
-              onBarcodeClick={handleBarcodeClick}
+              onCubeClick={handleCubeClick}
+              onBarcodeClick={onClose}
               onPlusClick={handlePlusClick}
               onTitleClick={onClose}
               isBarcodeActive={true}
@@ -143,11 +153,6 @@ export default function BarcodeScannerModal({
               </>
             )}
           </motion.div>
-
-          {/* Bottom Navigation - Sticky, no animation */}
-          <div className="sticky bottom-0 z-10 bg-[#2B2B2B]">
-            <BottomNav />
-          </div>
         </div>
       )}
     </AnimatePresence>

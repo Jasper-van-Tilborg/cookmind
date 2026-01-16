@@ -230,6 +230,14 @@ export default function VoorraadPage() {
         onClose={handleCloseBasisvoorraadModal}
         initialSelectedIds={basicInventorySelectedIds}
         onSelectionChange={handleBasicInventorySelectionChange}
+        onOpenBarcode={() => {
+          handleCloseBasisvoorraadModal();
+          handleToggleBarcodeModal();
+        }}
+        onOpenAddProduct={() => {
+          handleCloseBasisvoorraadModal();
+          handleAddProduct();
+        }}
       />
 
       {/* Barcode Scanner Modal */}
@@ -237,6 +245,14 @@ export default function VoorraadPage() {
         isOpen={isBarcodeModalOpen}
         onClose={handleCloseBarcodeModal}
         onProductAdded={handleProductAdded}
+        onOpenBasisvoorraad={() => {
+          handleCloseBarcodeModal();
+          handleToggleBasisvoorraadModal();
+        }}
+        onOpenAddProduct={() => {
+          handleCloseBarcodeModal();
+          handleAddProduct();
+        }}
       />
     </>
   );

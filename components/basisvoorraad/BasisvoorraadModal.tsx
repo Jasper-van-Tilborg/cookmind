@@ -9,7 +9,6 @@ import BasisvoorraadSearch from '@/components/basisvoorraad/BasisvoorraadSearch'
 import BasisvoorraadList, {
   BasisvoorraadProduct,
 } from '@/components/basisvoorraad/BasisvoorraadList';
-import BottomNav from '@/components/navigation/BottomNav';
 
 // Standard basic inventory products
 const STANDARD_PRODUCTS: BasisvoorraadProduct[] = [
@@ -30,6 +29,8 @@ interface BasisvoorraadModalProps {
   onClose: () => void;
   initialSelectedIds?: Set<string>;
   onSelectionChange?: (selectedIds: Set<string>) => void;
+  onOpenBarcode?: () => void;
+  onOpenAddProduct?: () => void;
 }
 
 export default function BasisvoorraadModal({
@@ -37,6 +38,8 @@ export default function BasisvoorraadModal({
   onClose,
   initialSelectedIds = new Set(),
   onSelectionChange,
+  onOpenBarcode,
+  onOpenAddProduct,
 }: BasisvoorraadModalProps) {
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,13 +160,20 @@ export default function BasisvoorraadModal({
 
   // Handle header button clicks
   const handleBarcodeClick = () => {
-    // TODO: Implement barcode scanner
-    console.log('Barcode scanner clicked');
+    if (onOpenBarcode) {
+      onOpenBarcode();
+    } else {
+      onClose();
+    }
   };
 
   const handlePlusClick = () => {
-    // TODO: Implement add product manually
-    console.log('Add product manually clicked');
+    if (onOpenAddProduct) {
+      onOpenAddProduct();
+    } else {
+      // TODO: Implement add product manually
+      console.log('Add product manually clicked');
+    }
   };
 
   return (
@@ -187,7 +197,7 @@ export default function BasisvoorraadModal({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="flex-1 overflow-y-auto pb-20"
+            className="flex-1 overflow-y-auto"
           >
             <BasisvoorraadIntro />
             <BasisvoorraadSearch
@@ -200,11 +210,6 @@ export default function BasisvoorraadModal({
               onToggle={handleToggle}
             />
           </motion.div>
-
-          {/* Bottom Navigation - Sticky, no animation */}
-          <div className="sticky bottom-0 z-10 bg-[#FAFAF7]">
-            <BottomNav />
-          </div>
         </div>
       )}
     </AnimatePresence>

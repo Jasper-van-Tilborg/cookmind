@@ -2,16 +2,16 @@
 
 :root {
   /* CookMind AI Brand Colors */
-  --color-primary: #1F6F54;
-  --color-background: #FAFAF7;
-  --color-gradient: #9FC5B5;
-  --color-text-primary: #2B2B2B;
-  --color-inactive: #E5E5E0;
-  --color-button-text: #FAFAF7;
-  
+  --color-primary: #1f6f54;
+  --color-background: #fafaf7;
+  --color-gradient: #9fc5b5;
+  --color-text-primary: #2b2b2b;
+  --color-inactive: #e5e5e0;
+  --color-button-text: #fafaf7;
+
   /* Legacy colors for compatibility */
-  --background: #FAFAF7;
-  --foreground: #2B2B2B;
+  --background: #fafaf7;
+  --foreground: #2b2b2b;
 }
 
 @theme inline {
