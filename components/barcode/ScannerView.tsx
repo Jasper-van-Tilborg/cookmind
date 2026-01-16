@@ -44,8 +44,6 @@ export default function ScannerView({ onScanSuccess, onError }: ScannerViewProps
             fps: 10,
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0,
-            showTorchButtonIfSupported: true,
-            showZoomSliderIfSupported: true,
           },
           (decodedText) => {
             // Success callback
