@@ -11,6 +11,7 @@ import ProductList from '@/components/voorraad/ProductList';
 import BottomNav from '@/components/navigation/BottomNav';
 import BasisvoorraadModal from '@/components/basisvoorraad/BasisvoorraadModal';
 import BarcodeScannerModal from '@/components/barcode/BarcodeScannerModal';
+import AddProductModal from '@/components/product/AddProductModal';
 import { InventoryItem } from '@/components/voorraad/ProductCard';
 
 export default function VoorraadPage() {
@@ -22,6 +23,7 @@ export default function VoorraadPage() {
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'quantity'>('date');
   const [isBasisvoorraadModalOpen, setIsBasisvoorraadModalOpen] = useState(false);
   const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [basicInventorySelectedIds, setBasicInventorySelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -95,8 +97,15 @@ export default function VoorraadPage() {
   }, [router, supabase]);
 
   const handleAddProduct = () => {
-    // TODO: Open add product modal
-    console.log('Add product clicked');
+    setIsAddProductModalOpen(true);
+  };
+
+  const handleToggleAddProductModal = () => {
+    setIsAddProductModalOpen(!isAddProductModalOpen);
+  };
+
+  const handleCloseAddProductModal = () => {
+    setIsAddProductModalOpen(false);
   };
 
   const handleEdit = (item: InventoryItem) => {
@@ -188,6 +197,7 @@ export default function VoorraadPage() {
           onPlusClick={handleAddProduct}
           isBasisvoorraadActive={isBasisvoorraadModalOpen}
           isBarcodeActive={isBarcodeModalOpen}
+          isPlusActive={isAddProductModalOpen}
         />
         </div>
 
@@ -218,6 +228,8 @@ export default function VoorraadPage() {
               ? handleCloseBasisvoorraadModal 
               : isBarcodeModalOpen 
               ? handleCloseBarcodeModal 
+              : isAddProductModalOpen
+              ? handleCloseAddProductModal
               : undefined
           } 
         />
@@ -252,6 +264,21 @@ export default function VoorraadPage() {
         onOpenAddProduct={() => {
           handleCloseBarcodeModal();
           handleAddProduct();
+        }}
+      />
+
+      {/* Add Product Modal */}
+      <AddProductModal
+        isOpen={isAddProductModalOpen}
+        onClose={handleCloseAddProductModal}
+        onProductAdded={handleProductAdded}
+        onOpenBarcode={() => {
+          handleCloseAddProductModal();
+          handleToggleBarcodeModal();
+        }}
+        onOpenBasisvoorraad={() => {
+          handleCloseAddProductModal();
+          handleToggleBasisvoorraadModal();
         }}
       />
     </>

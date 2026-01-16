@@ -32,6 +32,7 @@ export default function BarcodeScannerModal({
   const supabase = createClient();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scannerKey, setScannerKey] = useState(0); // Key to force remount of ScannerView
 
   const handleScanSuccess = async (barcode: string) => {
     setIsProcessing(true);
@@ -73,11 +74,16 @@ export default function BarcodeScannerModal({
         throw new Error('Fout bij toevoegen aan voorraad');
       }
 
-      // Success - close modal and refresh
+      // Success - update inventory and reset scanner
       if (onProductAdded) {
         onProductAdded();
       }
-      onClose();
+      
+      // Reset processing state and remount scanner to allow scanning again
+      setIsProcessing(false);
+      setError(null);
+      // Force remount of ScannerView by changing key
+      setScannerKey(prev => prev + 1);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Onbekende fout';
       setError(errorMessage);
@@ -142,6 +148,7 @@ export default function BarcodeScannerModal({
             ) : (
               <>
                 <ScannerView
+                  key={scannerKey}
                   onScanSuccess={handleScanSuccess}
                   onError={handleScanError}
                 />

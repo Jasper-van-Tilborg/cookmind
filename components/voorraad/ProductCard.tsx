@@ -11,6 +11,7 @@ export interface InventoryItem {
   quantity: number;
   unit: string;
   details?: string;
+  ingredient_tag?: string | null;
 }
 
 interface ProductCardProps {
