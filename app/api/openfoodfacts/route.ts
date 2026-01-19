@@ -33,6 +33,15 @@ export async function GET(request: NextRequest) {
     }
 
     const product = data.product;
+    const nutriments = product.nutriments || {};
+
+    // Extract nutritional values (per 100g)
+    const nutrition = {
+      calories: nutriments['energy-kcal_100g'] || nutriments['energy-kcal'] || null,
+      carbohydrates: nutriments['carbohydrates_100g'] || nutriments.carbohydrates || null,
+      proteins: nutriments['proteins_100g'] || nutriments.proteins || null,
+      fat: nutriments['fat_100g'] || nutriments.fat || null,
+    };
 
     // Extract relevant product information
     const productData = {
@@ -42,7 +51,8 @@ export async function GET(request: NextRequest) {
       brand: product.brands || product.brand || null,
       quantity: product.quantity || null,
       categories: product.categories || null,
-      nutriments: product.nutriments || null,
+      categories_tags: product.categories_tags || null,
+      nutrition,
     };
 
     return NextResponse.json(productData);

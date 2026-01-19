@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 interface SearchSortBarProps {
   onSearch: (query: string) => void;
-  onSort: (sortBy: 'name' | 'date' | 'quantity') => void;
+  onSort: (sortBy: 'name' | 'date' | 'quantity' | 'expiry') => void;
 }
 
 export default function SearchSortBar({ onSearch, onSort }: SearchSortBarProps) {
@@ -93,6 +93,15 @@ export default function SearchSortBar({ onSearch, onSort }: SearchSortBarProps) 
                 className="w-full px-4 py-3 text-left text-sm text-[#2B2B2B] hover:bg-[#E5E5E0] first:rounded-t-xl"
               >
                 Sorteer op naam
+              </button>
+              <button
+                onClick={() => {
+                  onSort('expiry');
+                  setShowSortMenu(false);
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-[#2B2B2B] hover:bg-[#E5E5E0]"
+              >
+                Sorteer op houdbaarheidsdatum
               </button>
               <button
                 onClick={() => {

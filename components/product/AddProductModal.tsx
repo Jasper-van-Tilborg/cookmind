@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import VoorraadHeader from '@/components/voorraad/VoorraadHeader';
 import AddProductSearch from './AddProductSearch';
 import AddProductList from './AddProductList';
-import IngredientTagSelector from './IngredientTagSelector';
 import { AddProductItemData } from './AddProductItem';
 import { suggestIngredientTag } from '@/lib/utils/productTagging';
 
@@ -39,13 +39,12 @@ export default function AddProductModal({
   onOpenBarcode,
   onOpenBasisvoorraad,
 }: AddProductModalProps) {
+  const router = useRouter();
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [products, setProducts] = useState<AddProductItemData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userHistory, setUserHistory] = useState<AddProductItemData[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<AddProductItemData | null>(null);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Load user history on mount
   useEffect(() => {
@@ -204,96 +203,19 @@ export default function AddProductModal({
   }, [searchQuery, isOpen, userHistory]);
 
   const handleProductClick = (product: AddProductItemData) => {
-    // Show tag selector
-    setSelectedProduct(product);
-    setSelectedTag(product.suggestedTag || null);
-  };
+    // Close modal first
+    onClose();
 
-  const handleTagSelected = async (tag: string | null) => {
-    if (!selectedProduct) return;
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error('User not logged in');
-        setSelectedProduct(null);
-        return;
-      }
-
-      // Add product to inventory with tag
-      const insertData: any = {
-        user_id: user.id,
-        product_name: selectedProduct.name,
-        product_image: selectedProduct.image,
-        quantity: 1,
-        unit: 'stuks',
-        details: selectedProduct.brand
-          ? `${selectedProduct.brand}${selectedProduct.quantity ? ` - ${selectedProduct.quantity}` : ''}`
-          : selectedProduct.quantity || null,
-      };
-
-      // Only add ingredient_tag if it's not null (column might not exist yet)
-      if (tag !== null) {
-        insertData.ingredient_tag = tag;
-      }
-
-      const { error } = await supabase.from('inventory').insert(insertData);
-
-      if (error) {
-        // Check if it's a column doesn't exist error
-        const errorCode = error?.code;
-        const errorMessage = error?.message || '';
-        const isColumnError = 
-          errorCode === '42703' || 
-          errorMessage.toLowerCase().includes('column') ||
-          errorMessage.toLowerCase().includes('does not exist');
-
-        if (isColumnError) {
-          // Column doesn't exist yet - insert without tag
-          const { error: retryError } = await supabase.from('inventory').insert({
-            user_id: user.id,
-            product_name: selectedProduct.name,
-            product_image: selectedProduct.image,
-            quantity: 1,
-            unit: 'stuks',
-            details: selectedProduct.brand
-              ? `${selectedProduct.brand}${selectedProduct.quantity ? ` - ${selectedProduct.quantity}` : ''}`
-              : selectedProduct.quantity || null,
-          });
-
-          if (retryError) {
-            console.error('Error adding product to inventory:', retryError);
-            setSelectedProduct(null);
-            return;
-          }
-        } else {
-          console.error('Error adding product to inventory:', error);
-          setSelectedProduct(null);
-          return;
-        }
-      }
-
-      // Notify parent and update user history
-      if (onProductAdded) {
-        onProductAdded();
-      }
-
-      // Add to user history if not already there
-      if (!userHistory.some((p) => p.name === selectedProduct.name)) {
-        setUserHistory((prev) => [selectedProduct, ...prev].slice(0, 20));
-      }
-
-      // Reset search if we were searching
-      if (searchQuery.trim() !== '') {
-        setSearchQuery('');
-      }
-
-      // Close tag selector
-      setSelectedProduct(null);
-      setSelectedTag(null);
-    } catch (error) {
-      console.error('Error adding product:', error);
-      setSelectedProduct(null);
+    // Navigate to product detail page
+    // Use barcode if available, otherwise use product name as fallback (encoded)
+    if (product.barcode) {
+      router.push(`/product/${product.barcode}`);
+    } else {
+      // If no barcode, we can't use the product detail page
+      // Fallback: try to add directly (for products without barcode from history)
+      // For now, just navigate with encoded name
+      const encodedName = encodeURIComponent(product.name);
+      router.push(`/product/${encodedName}`);
     }
   };
 
@@ -366,19 +288,6 @@ export default function AddProductModal({
               isLoading={isLoading && searchQuery.trim() !== ''}
             />
           </motion.div>
-
-          {/* Tag Selector Modal */}
-          {selectedProduct && (
-            <IngredientTagSelector
-              suggestedTag={selectedProduct.suggestedTag || null}
-              value={selectedTag}
-              onChange={handleTagSelected}
-              onClose={() => {
-                setSelectedProduct(null);
-                setSelectedTag(null);
-              }}
-            />
-          )}
         </motion.div>
       )}
     </AnimatePresence>

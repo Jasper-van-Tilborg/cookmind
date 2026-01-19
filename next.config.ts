@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: 'images.openfoodfacts.org',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
     ],
   },
 };

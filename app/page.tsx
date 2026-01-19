@@ -12,6 +12,7 @@ import BottomNav from '@/components/navigation/BottomNav';
 import BasisvoorraadModal from '@/components/basisvoorraad/BasisvoorraadModal';
 import BarcodeScannerModal from '@/components/barcode/BarcodeScannerModal';
 import AddProductModal from '@/components/product/AddProductModal';
+import EditProductModal from '@/components/product/EditProductModal';
 import { InventoryItem } from '@/components/voorraad/ProductCard';
 
 export default function VoorraadPage() {
@@ -20,10 +21,12 @@ export default function VoorraadPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'date' | 'quantity'>('date');
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'quantity' | 'expiry'>('expiry');
   const [isBasisvoorraadModalOpen, setIsBasisvoorraadModalOpen] = useState(false);
   const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [basicInventorySelectedIds, setBasicInventorySelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -109,8 +112,13 @@ export default function VoorraadPage() {
   };
 
   const handleEdit = (item: InventoryItem) => {
-    // TODO: Open edit modal
-    console.log('Edit item:', item);
+    setEditingItem(item);
+    setIsEditProductModalOpen(true);
+  };
+
+  const handleCloseEditProductModal = () => {
+    setIsEditProductModalOpen(false);
+    setEditingItem(null);
   };
 
   const handleDelete = async (itemId: string) => {
@@ -136,7 +144,7 @@ export default function VoorraadPage() {
     setSearchQuery(query);
   };
 
-  const handleSort = (sort: 'name' | 'date' | 'quantity') => {
+  const handleSort = (sort: 'name' | 'date' | 'quantity' | 'expiry') => {
     setSortBy(sort);
   };
 
@@ -280,6 +288,14 @@ export default function VoorraadPage() {
           handleCloseAddProductModal();
           handleToggleBasisvoorraadModal();
         }}
+      />
+
+      {/* Edit Product Modal */}
+      <EditProductModal
+        isOpen={isEditProductModalOpen}
+        item={editingItem}
+        onClose={handleCloseEditProductModal}
+        onUpdated={handleProductAdded}
       />
     </>
   );

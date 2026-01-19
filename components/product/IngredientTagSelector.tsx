@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { ALL_INGREDIENTS } from '@/lib/constants/ingredients';
 
 interface IngredientTagSelectorProps {
@@ -16,14 +17,55 @@ export default function IngredientTagSelector({
   onChange,
   onClose,
 }: IngredientTagSelectorProps) {
+  const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customTag, setCustomTag] = useState('');
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [isLoadingCustomTags, setIsLoadingCustomTags] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Filter ingredients based on search query
+  // Load user's custom tags
+  useEffect(() => {
+    const loadCustomTags = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsLoadingCustomTags(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('user_custom_tags')
+          .select('tag_name')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          // Table might not exist yet, ignore error
+          console.error('Error loading custom tags:', error);
+          setCustomTags([]);
+        } else {
+          setCustomTags((data || []).map((item) => item.tag_name));
+        }
+      } catch (error) {
+        console.error('Error loading custom tags:', error);
+        setCustomTags([]);
+      } finally {
+        setIsLoadingCustomTags(false);
+      }
+    };
+
+    loadCustomTags();
+  }, [supabase]);
+
+  // Filter ingredients and custom tags based on search query
+  const searchLower = searchQuery.toLowerCase();
+  const filteredCustomTags = customTags.filter((tag) =>
+    tag.toLowerCase().includes(searchLower)
+  );
   const filteredIngredients = ALL_INGREDIENTS.filter((ingredient) =>
-    ingredient.toLowerCase().includes(searchQuery.toLowerCase())
+    ingredient.toLowerCase().includes(searchLower)
   );
 
   const handleSelect = (tag: string) => {
@@ -33,9 +75,52 @@ export default function IngredientTagSelector({
     }
   };
 
-  const handleCustomTag = () => {
-    if (customTag.trim()) {
-      onChange(customTag.trim());
+  const handleCustomTag = async () => {
+    if (!customTag.trim()) return;
+
+    const tagName = customTag.trim();
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // Still allow tag selection even if not logged in (shouldn't happen)
+        onChange(tagName);
+        if (onClose) {
+          onClose();
+        }
+        return;
+      }
+
+      // Save custom tag to database
+      const { error } = await supabase
+        .from('user_custom_tags')
+        .insert({
+          user_id: user.id,
+          tag_name: tagName,
+        })
+        .select();
+
+      if (error) {
+        // Check if it's a duplicate error (unique constraint)
+        const isDuplicate = error.code === '23505' || error.message.includes('duplicate');
+        if (!isDuplicate) {
+          console.error('Error saving custom tag:', error);
+        }
+        // Continue anyway - tag might already exist
+      } else {
+        // Add to local state
+        setCustomTags((prev) => [tagName, ...prev]);
+      }
+
+      // Use the tag
+      onChange(tagName);
+      if (onClose) {
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error saving custom tag:', error);
+      // Still allow tag selection even if save fails
+      onChange(tagName);
       if (onClose) {
         onClose();
       }
@@ -95,21 +180,55 @@ export default function IngredientTagSelector({
             </div>
 
             <div className="max-h-64 overflow-y-auto">
-              {filteredIngredients.length > 0 ? (
+              {filteredCustomTags.length > 0 || filteredIngredients.length > 0 ? (
                 <div className="space-y-1">
-                  {filteredIngredients.map((ingredient) => (
-                    <button
-                      key={ingredient}
-                      onClick={() => handleSelect(ingredient)}
-                      className={`w-full rounded-lg px-4 py-2 text-left text-sm transition-colors ${
-                        ingredient === suggestedTag
-                          ? 'bg-[#D6EDE2] text-[#1F6F54]'
-                          : 'bg-white text-[#2B2B2B] hover:bg-[#E5E5E0]'
-                      }`}
-                    >
-                      {ingredient}
-                    </button>
-                  ))}
+                  {/* Custom Tags Section */}
+                  {filteredCustomTags.length > 0 && (
+                    <>
+                      <div className="mb-2 px-2 text-xs font-semibold text-[#2B2B2B]/60 uppercase tracking-wide">
+                        Mijn tags
+                      </div>
+                      {filteredCustomTags.map((tag) => (
+                        <button
+                          key={`custom-${tag}`}
+                          onClick={() => handleSelect(tag)}
+                          className={`w-full rounded-lg px-4 py-2 text-left text-sm transition-colors ${
+                            tag === suggestedTag
+                              ? 'bg-[#D6EDE2] text-[#1F6F54]'
+                              : 'bg-[#F0F8F5] text-[#1F6F54] hover:bg-[#E0F0EA]'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                      {filteredIngredients.length > 0 && (
+                        <div className="my-2 border-t border-[#E5E5E0]"></div>
+                      )}
+                    </>
+                  )}
+                  {/* Standard Ingredients Section */}
+                  {filteredIngredients.length > 0 && (
+                    <>
+                      {filteredCustomTags.length > 0 && (
+                        <div className="mb-2 px-2 text-xs font-semibold text-[#2B2B2B]/60 uppercase tracking-wide">
+                          Standaard ingrediënten
+                        </div>
+                      )}
+                      {filteredIngredients.map((ingredient) => (
+                        <button
+                          key={ingredient}
+                          onClick={() => handleSelect(ingredient)}
+                          className={`w-full rounded-lg px-4 py-2 text-left text-sm transition-colors ${
+                            ingredient === suggestedTag
+                              ? 'bg-[#D6EDE2] text-[#1F6F54]'
+                              : 'bg-white text-[#2B2B2B] hover:bg-[#E5E5E0]'
+                          }`}
+                        >
+                          {ingredient}
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               ) : (
                 <p className="py-4 text-center text-sm text-[#2B2B2B]/60">

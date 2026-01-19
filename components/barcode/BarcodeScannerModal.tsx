@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import VoorraadHeader from '@/components/voorraad/VoorraadHeader';
@@ -29,6 +30,7 @@ export default function BarcodeScannerModal({
   onOpenBasisvoorraad,
   onOpenAddProduct,
 }: BarcodeScannerModalProps) {
+  const router = useRouter();
   const supabase = createClient();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function BarcodeScannerModal({
     setError(null);
 
     try {
-      // Fetch product data from Open Food Facts
+      // Verify product exists in Open Food Facts
       const response = await fetch(`/api/openfoodfacts?barcode=${barcode}`);
 
       if (!response.ok) {
@@ -47,47 +49,15 @@ export default function BarcodeScannerModal({
         throw new Error(errorData.error || 'Product niet gevonden');
       }
 
-      const productData: ProductData = await response.json();
-
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error('Niet ingelogd');
-      }
-
-      // Add product to inventory
-      const { error: insertError } = await supabase.from('inventory').insert({
-        user_id: user.id,
-        product_name: productData.name,
-        product_image: productData.image,
-        quantity: 1,
-        unit: 'stuks',
-        details: productData.brand
-          ? `${productData.brand}${productData.quantity ? ` - ${productData.quantity}` : ''}`
-          : productData.quantity || null,
-      });
-
-      if (insertError) {
-        throw new Error('Fout bij toevoegen aan voorraad');
-      }
-
-      // Success - update inventory and reset scanner
-      if (onProductAdded) {
-        onProductAdded();
-      }
-      
-      // Reset processing state and remount scanner to allow scanning again
-      setIsProcessing(false);
-      setError(null);
-      // Force remount of ScannerView by changing key
-      setScannerKey(prev => prev + 1);
+      // Close modal and navigate to product detail page
+      onClose();
+      router.push(`/product/${barcode}`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Onbekende fout';
       setError(errorMessage);
       setIsProcessing(false);
+      // Reset scanner to allow retry
+      setScannerKey(prev => prev + 1);
     }
   };
 
