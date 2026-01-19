@@ -363,8 +363,6 @@ export default function RecipeDetailPage() {
         isOpen={isAIModalOpen}
         onClose={() => {
           setIsAIModalOpen(false);
-          // Refresh to show updated recipe
-          router.refresh();
         }}
         recipe={recipe}
         hasAllIngredients={hasAllIngredients}

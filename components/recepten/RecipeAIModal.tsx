@@ -105,11 +105,13 @@ export default function RecipeAIModal({
         throw new Error(dbError.message);
       }
 
-      // Close modal and reload the page to show updated recipe
+      // Close modal first
       onClose();
       
-      // Force a full page reload to show the adapted recipe
-      window.location.reload();
+      // Wait a moment for modal to close, then reload to show updated recipe
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Onbekende fout bij aanpassen recept';
       setError(errorMessage);

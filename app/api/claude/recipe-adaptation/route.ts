@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
 
     // Build context for AI
     const missingIngredientsText = missingIngredients && missingIngredients.length > 0
-      ? `\n\nOntbrekende ingrediënten: ${missingIngredients.join(', ')}`
-      : '';
+      ? missingIngredients.join(', ')
+      : null;
 
     const ingredientsText = recipe.ingredients
       .map((ing) => `- ${ing.amount} ${ing.unit} ${ing.name}`)
@@ -50,42 +50,49 @@ export async function POST(request: NextRequest) {
       .map((inst, idx) => `${idx + 1}. ${inst}`)
       .join('\n');
 
-    const aiPrompt = `Je bent een professionele Nederlandse kookassistent. Pas het volgende recept aan volgens de wens van de gebruiker.
+    const aiPrompt = `Je bent een professionele Nederlandse kookassistent. Je ontvangt een compleet recept en een verzoek van de gebruiker om het recept aan te passen.
 
-ORIGINEEL RECEPT:
+COMPLEET ORIGINEEL RECEPT:
 Titel: ${recipe.title}
 ${recipe.description ? `Beschrijving: ${recipe.description}` : ''}
 
 Ingrediënten:
 ${ingredientsText}
 
-Bereidingswijze:
+Bereidingswijze (stap voor stap):
 ${instructionsText}
-${missingIngredientsText}
+${missingIngredientsText ? `\n\nLET OP: De volgende ingrediënten ontbreken in de voorraad van de gebruiker: ${missingIngredientsText}. Houd hier rekening mee bij het aanpassen van het recept.` : '\n\nLET OP: Alle ingrediënten zijn beschikbaar in de voorraad van de gebruiker.'}
 
-GEBRUIKERSWENS:
-${prompt}
+GEBRUIKERSVERZOEK:
+"${prompt}"
 
-OPDRACHT:
-Pas het recept aan volgens de gebruikerswens. Behoud de structuur en het format, maar pas de ingrediënten en/of bereidingswijze aan waar nodig. Zorg dat het recept logisch en uitvoerbaar blijft.
+JOUW TAAK:
+Pas het volledige recept aan volgens het gebruikersverzoek. Dit betekent:
+1. Pas de ingrediëntenlijst aan (verwijder ingrediënten die niet meer nodig zijn, voeg nieuwe toe indien nodig, pas hoeveelheden aan)
+2. Pas de bereidingswijze aan zodat deze logisch aansluit bij de nieuwe ingrediënten
+3. Pas de titel aan als dat logisch is (bijv. "Vegetarische Pasta Carbonara" in plaats van "Pasta Carbonara")
+4. Pas de beschrijving aan als dat relevant is
 
-Geef je antwoord terug in het volgende JSON format (geen markdown, alleen pure JSON):
+BELANGRIJK:
+- Je moet het COMPLETE recept aanpassen, niet alleen delen ervan
+- Alle instructies moeten logisch zijn en aansluiten bij de aangepaste ingrediënten
+- Behoud de Nederlandse taal
+- Gebruik dezelfde units (gram, ml, stuks, etc.)
+- Zorg dat ingredient_tag matcht met standaard ingredient tags (bijv. "ui", "knoflook", "kip", "tomaat", "spaghetti", "eieren", etc.) of null als geen match
+- Als het verzoek "maak dit vegetarisch" is, vervang vlees/vis door vegetarische alternatieven en pas de instructies aan
+- Als het verzoek "maak het sneller" is, vereenvoudig de stappen en verminder kooktijden
+- Zorg dat het recept compleet en uitvoerbaar is
+
+Geef je antwoord terug in het volgende JSON format (geen markdown, alleen pure JSON, geen extra tekst):
 {
   "title": "Aangepaste titel van het recept",
-  "description": "Optionele beschrijving (kan null zijn)",
-  "instructions": ["Stap 1", "Stap 2", "Stap 3", ...],
+  "description": "Aangepaste beschrijving (kan null zijn)",
+  "instructions": ["Stap 1 van de aangepaste bereidingswijze", "Stap 2 van de aangepaste bereidingswijze", "Stap 3", ...],
   "ingredients": [
     {"name": "ingrediënt naam", "amount": 100, "unit": "gram", "ingredient_tag": "tag of null"},
     ...
   ]
-}
-
-Belangrijk:
-- Behoud Nederlandse taal
-- Gebruik dezelfde units (gram, ml, stuks, etc.)
-- Zorg dat ingredient_tag matcht met standaard ingredient tags (bijv. "ui", "knoflook", "kip", "tomaat", etc.) of null als geen match
-- Maak logische aanpassingen die het recept verbeteren of aanpassen aan de wens
-- Als de wens niet uitvoerbaar is, geef dan een redelijke alternatieve aanpassing`;
+}`;
 
     const message = await anthropic.messages.create({
       model: 'claude-opus-4-5-20251101',
