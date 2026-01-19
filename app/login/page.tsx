@@ -82,6 +82,45 @@ export default function LoginPage() {
     console.log(`${provider} login clicked`);
   };
 
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      // Demo account credentials
+      const demoEmail = 'demo@cookmind.ai';
+      const demoPassword = 'demo123456';
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: demoEmail,
+        password: demoPassword,
+      });
+
+      if (error) {
+        setErrors({ general: error.message });
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Check if email is verified
+        if (!data.user.email_confirmed_at) {
+          setErrors({ 
+            general: 'Demo account is nog niet geverifieerd. Maak eerst een account aan of contacteer support.' 
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // User is logged in and verified, redirect to home
+        router.push('/');
+      }
+    } catch (error) {
+      setErrors({ general: 'Er is iets misgegaan bij het inloggen met demo account.' });
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-[#FAFAF7] px-6 py-8">
       <div className="absolute left-6 top-8">
@@ -159,6 +198,46 @@ export default function LoginPage() {
           >
             Account aanmaken
           </Link>
+        </div>
+
+        <div className="mb-6">
+          <button
+            onClick={handleDemoLogin}
+            disabled={isLoading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#1F6F54] bg-[#FAFAF7] px-6 py-4 text-base font-semibold text-[#1F6F54] transition-colors hover:bg-[#D6EDE2] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-[#1F6F54]"
+            >
+              <path
+                d="M12 2L2 7L12 12L22 7L12 2Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M2 17L12 22L22 17"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M2 12L12 17L22 12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {isLoading ? 'Bezig met inloggen...' : 'Demo Login'}
+          </button>
         </div>
 
         <div className="mb-6 flex items-center gap-4">
