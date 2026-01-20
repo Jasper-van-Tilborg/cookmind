@@ -15,12 +15,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CookMind AI - Van voorraad naar perfect recept",
   description: "De revolutionaire app die jouw voorraad transformeert in heerlijke recepten met AI.",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({
