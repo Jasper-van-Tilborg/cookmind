@@ -19,15 +19,16 @@ export default function RecipeDetailPage() {
   const recipeId = params.id as string;
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [originalRecipe, setOriginalRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [basicInventory, setBasicInventory] = useState<Set<string>>(new Set());
   const [servingMultiplier, setServingMultiplier] = useState(2);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [aiInitialPrompt, setAiInitialPrompt] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAdapted, setIsAdapted] = useState(false);
-  const [adaptedRecipe, setAdaptedRecipe] = useState<Recipe | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,14 +37,14 @@ export default function RecipeDetailPage() {
         setError(null);
 
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           router.push('/onboarding');
           return;
         }
 
-        // Load recipe, inventory, basic inventory and adapted recipe in parallel
-        const [recipeResult, inventoryResult, basicInventoryResult, adaptedRecipeResult] = await Promise.all([
+        // Load recipe, inventory and adapted recipe in parallel
+        const [recipeResult, inventoryResult, adaptedRecipeResult] = await Promise.all([
           supabase
             .from('recipes')
             .select('*')
@@ -54,16 +55,27 @@ export default function RecipeDetailPage() {
             .select('*')
             .eq('user_id', user.id),
           supabase
-            .from('basic_inventory')
-            .select('product_id')
-            .eq('user_id', user.id),
-          supabase
             .from('user_recipe_adaptations')
             .select('*')
             .eq('user_id', user.id)
             .eq('original_recipe_id', recipeId)
             .maybeSingle(),
         ]);
+
+        // Load basic inventory from localStorage
+        const loadBasicInventory = () => {
+          try {
+            const stored = localStorage.getItem('cookmind_basic_inventory');
+            if (stored) {
+              const ids = JSON.parse(stored) as string[];
+              return new Set(ids);
+            }
+          } catch (error) {
+            console.error('Error loading basic inventory from localStorage:', error);
+          }
+          return new Set<string>();
+        };
+        const basicInventorySet = loadBasicInventory();
 
         if (recipeResult.error) {
           throw new Error(recipeResult.error.message);
@@ -72,6 +84,14 @@ export default function RecipeDetailPage() {
         if (!recipeResult.data) {
           throw new Error('Recept niet gevonden');
         }
+
+        // Always store original recipe
+        const originalData: Recipe = {
+          ...recipeResult.data,
+          instructions: recipeResult.data.instructions as string[],
+          ingredients: recipeResult.data.ingredients as Recipe['ingredients'],
+        };
+        setOriginalRecipe(originalData);
 
         // Check if there's an adapted version
         if (adaptedRecipeResult.data && !adaptedRecipeResult.error) {
@@ -86,22 +106,12 @@ export default function RecipeDetailPage() {
             image_url: recipeResult.data.image_url, // Keep original image
           };
           setRecipe(adaptedData);
-          setAdaptedRecipe(adaptedData);
           setIsAdapted(true);
         } else {
-          const recipeData = {
-            ...recipeResult.data,
-            instructions: recipeResult.data.instructions as string[],
-            ingredients: recipeResult.data.ingredients as Recipe['ingredients'],
-          };
-          setRecipe(recipeData);
+          setRecipe(originalData);
           setIsAdapted(false);
         }
         setInventory(inventoryResult.data || []);
-        
-        const basicInventorySet = new Set(
-          (basicInventoryResult.data || []).map((item) => item.product_id)
-        );
         setBasicInventory(basicInventorySet);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Fout bij laden recept';
@@ -116,6 +126,19 @@ export default function RecipeDetailPage() {
       loadData();
     }
   }, [recipeId, router, supabase]);
+
+  // Check for AI demo query parameter
+  useEffect(() => {
+    if (typeof window !== 'undefined' && recipe) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('ai-demo') === 'true') {
+        setAiInitialPrompt('Maak het vegetarisch');
+        setIsAIModalOpen(true);
+        // Remove query parameter from URL
+        window.history.replaceState({}, '', `/recepten/${recipeId}`);
+      }
+    }
+  }, [recipe, recipeId]);
 
   const calculateMatch = (): { matchPercentage: number; missingIngredients: string[] } => {
     if (!recipe || recipe.ingredients.length === 0) {
@@ -221,7 +244,10 @@ export default function RecipeDetailPage() {
         <div className="px-6 py-4">
           {/* Title */}
           <div className="flex items-center gap-2 mb-4">
-            <h1 className="text-2xl font-bold text-[#2B2B2B]">
+            <h1 className={`text-2xl font-bold ${isAdapted && originalRecipe && originalRecipe.title !== recipe.title
+                ? 'text-[#1F6F54]'
+                : 'text-[#2B2B2B]'
+              }`}>
               {recipe.title}
             </h1>
             {isAdapted && (
@@ -231,9 +257,9 @@ export default function RecipeDetailPage() {
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-              className="text-yellow-400 shrink-0"
-              aria-label="AI-aangepast recept"
-            >
+                className="text-yellow-400 shrink-0"
+                aria-label="AI-aangepast recept"
+              >
                 <path
                   d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
                   fill="currentColor"
@@ -241,6 +267,26 @@ export default function RecipeDetailPage() {
               </svg>
             )}
           </div>
+
+          {/* Description if changed */}
+          {isAdapted && originalRecipe && recipe.description &&
+            originalRecipe.description !== recipe.description && (
+              <div className="mb-4 rounded-xl bg-[#D6EDE2] border-2 border-[#1F6F54] p-4">
+                <p className="text-[#1F6F54] font-medium">{recipe.description}</p>
+              </div>
+            )}
+
+          {/* Original description if recipe description is null but original had one */}
+          {isAdapted && originalRecipe && !recipe.description && originalRecipe.description && (
+            <div className="mb-4 rounded-xl bg-white border border-[#E5E5E0] p-4">
+              <p className="text-[#2B2B2B]">{originalRecipe.description}</p>
+            </div>
+          )}
+
+          {/* Description if not adapted */}
+          {!isAdapted && recipe.description && (
+            <p className="mb-4 text-[#2B2B2B]/80">{recipe.description}</p>
+          )}
 
           {/* Serving Size and Prep Time */}
           <div className="flex items-center gap-4 mb-6">
@@ -286,7 +332,50 @@ export default function RecipeDetailPage() {
               multiplier={servingMultiplier}
               inventory={inventory}
               basicInventory={basicInventory}
+              originalIngredients={isAdapted && originalRecipe ? originalRecipe.ingredients : undefined}
             />
+          </div>
+
+          {/* Instructions List */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-[#2B2B2B] mb-3">
+              Bereidingswijze
+            </h2>
+            <div className="space-y-3">
+              {recipe.instructions.map((instruction, index) => {
+                const isChanged = isAdapted && originalRecipe
+                  ? originalRecipe.instructions[index] !== instruction ||
+                  index >= originalRecipe.instructions.length
+                  : false;
+
+                return (
+                  <div
+                    key={index}
+                    className={`rounded-xl p-4 ${isChanged
+                        ? 'bg-[#D6EDE2] border-2 border-[#1F6F54]'
+                        : 'bg-white border border-[#E5E5E0]'
+                      }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-semibold ${isChanged
+                            ? 'bg-[#1F6F54] text-white'
+                            : 'bg-[#E5E5E0] text-[#2B2B2B]'
+                          }`}
+                      >
+                        {index + 1}
+                      </div>
+                      <p
+                        className={`flex-1 ${isChanged ? 'text-[#1F6F54] font-medium' : 'text-[#2B2B2B]'
+                          }`}
+                      >
+                        {instruction}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -359,15 +448,19 @@ export default function RecipeDetailPage() {
       </div>
 
       {/* AI Modal */}
-      <RecipeAIModal
-        isOpen={isAIModalOpen}
-        onClose={() => {
-          setIsAIModalOpen(false);
-        }}
-        recipe={recipe}
-        hasAllIngredients={hasAllIngredients}
-        missingIngredients={missingIngredients}
-      />
+      {recipe && (
+        <RecipeAIModal
+          isOpen={isAIModalOpen}
+          onClose={() => {
+            setIsAIModalOpen(false);
+            setAiInitialPrompt(null);
+          }}
+          recipe={recipe}
+          hasAllIngredients={hasAllIngredients}
+          missingIngredients={missingIngredients}
+          initialPrompt={aiInitialPrompt}
+        />
+      )}
     </div>
   );
 }

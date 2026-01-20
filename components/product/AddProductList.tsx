@@ -6,12 +6,14 @@ interface AddProductListProps {
   products: AddProductItemData[];
   onProductClick: (product: AddProductItemData) => void;
   isLoading?: boolean;
+  showHeader?: boolean;
 }
 
 export default function AddProductList({
   products,
   onProductClick,
   isLoading = false,
+  showHeader = false,
 }: AddProductListProps) {
   if (isLoading) {
     return (
@@ -34,6 +36,11 @@ export default function AddProductList({
 
   return (
     <div className="px-6">
+      {showHeader && (
+        <h3 className="mb-4 text-lg font-semibold text-[#2B2B2B]">
+          Recent toegevoegd
+        </h3>
+      )}
       {products.map((product, index) => (
         <AddProductItem
           key={`${product.barcode || 'no-barcode'}-${product.name}-${index}`}

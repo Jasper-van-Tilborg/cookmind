@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import VoorraadHeader from '@/components/voorraad/VoorraadHeader';
 import BasisvoorraadIntro from '@/components/basisvoorraad/BasisvoorraadIntro';
 import BasisvoorraadSearch from '@/components/basisvoorraad/BasisvoorraadSearch';
 import BasisvoorraadList, {
   BasisvoorraadProduct,
 } from '@/components/basisvoorraad/BasisvoorraadList';
+
+const BASIC_INVENTORY_STORAGE_KEY = 'cookmind_basic_inventory';
 
 // Standard basic inventory products
 const STANDARD_PRODUCTS: BasisvoorraadProduct[] = [
@@ -33,6 +34,31 @@ interface BasisvoorraadModalProps {
   onOpenAddProduct?: () => void;
 }
 
+// Helper functions for localStorage
+const loadBasicInventoryFromStorage = (): Set<string> => {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const stored = localStorage.getItem(BASIC_INVENTORY_STORAGE_KEY);
+    if (stored) {
+      const ids = JSON.parse(stored) as string[];
+      return new Set(ids);
+    }
+  } catch (error) {
+    console.error('Error loading basic inventory from localStorage:', error);
+  }
+  return new Set();
+};
+
+const saveBasicInventoryToStorage = (ids: Set<string>): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    const idsArray = Array.from(ids);
+    localStorage.setItem(BASIC_INVENTORY_STORAGE_KEY, JSON.stringify(idsArray));
+  } catch (error) {
+    console.error('Error saving basic inventory to localStorage:', error);
+  }
+};
+
 export default function BasisvoorraadModal({
   isOpen,
   onClose,
@@ -41,97 +67,27 @@ export default function BasisvoorraadModal({
   onOpenBarcode,
   onOpenAddProduct,
 }: BasisvoorraadModalProps) {
-  const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(initialSelectedIds);
-  const [isSaving, setIsSaving] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    if (isOpen) {
+      const storedIds = loadBasicInventoryFromStorage();
+      setSelectedIds(storedIds);
+      if (onSelectionChange) {
+        onSelectionChange(storedIds);
+      }
+    }
+  }, [isOpen, onSelectionChange]);
 
   // Update selectedIds when initialSelectedIds changes
   useEffect(() => {
     setSelectedIds(new Set(initialSelectedIds));
   }, [initialSelectedIds]);
 
-  // Save selection to database
-  const saveSelection = async (productId: string, isSelected: boolean) => {
-    try {
-      setIsSaving(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) return;
-
-      if (isSelected) {
-        // Insert
-        const { error } = await supabase.from('basic_inventory').insert({
-          user_id: user.id,
-          product_id: productId,
-        });
-
-        if (error) {
-          const errorCode = error?.code;
-          const errorMessage = error?.message || '';
-          // Check for duplicate key errors (23505) and relation does not exist (42P01)
-          const isDuplicateError = errorCode === '23505' || errorMessage.toLowerCase().includes('duplicate');
-          const isRelationError = 
-            errorCode === '42P01' || 
-            errorMessage.toLowerCase().includes('does not exist') ||
-            errorMessage.toLowerCase().includes('relation') ||
-            errorMessage.toLowerCase().includes('table');
-          
-          // Only log if it's a real error, not duplicate or missing table
-          if (!isDuplicateError && !isRelationError && errorMessage) {
-            console.error('Error saving basic inventory:', {
-              code: errorCode,
-              message: errorMessage,
-              details: error?.details,
-              hint: error?.hint,
-            });
-          }
-        }
-      } else {
-        // Delete
-        const { error } = await supabase
-          .from('basic_inventory')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-
-        if (error) {
-          const errorCode = error?.code;
-          const errorMessage = error?.message || '';
-          // Check if it's a "relation does not exist" error (table not created yet)
-          const isRelationError = 
-            errorCode === '42P01' || 
-            errorMessage.toLowerCase().includes('does not exist') ||
-            errorMessage.toLowerCase().includes('relation') ||
-            errorMessage.toLowerCase().includes('table');
-          
-          // Only log if it's a real error, not missing table
-          if (!isRelationError && errorMessage) {
-            console.error('Error deleting basic inventory:', {
-              code: errorCode,
-              message: errorMessage,
-              details: error?.details,
-              hint: error?.hint,
-            });
-          }
-        }
-      }
-    } catch (error) {
-      // Only log unexpected errors
-      if (error instanceof Error) {
-        console.error('Unexpected error saving basic inventory:', error.message);
-      } else {
-        console.error('Unexpected error saving basic inventory:', error);
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   // Handle checkbox toggle
-  const handleToggle = async (productId: string) => {
+  const handleToggle = (productId: string) => {
     const newSelectedIds = new Set(selectedIds);
     const isSelected = selectedIds.has(productId);
 
@@ -141,16 +97,16 @@ export default function BasisvoorraadModal({
       newSelectedIds.add(productId);
     }
 
-    // Optimistic update
+    // Update state
     setSelectedIds(newSelectedIds);
+    
+    // Save to localStorage
+    saveBasicInventoryToStorage(newSelectedIds);
     
     // Notify parent of change
     if (onSelectionChange) {
       onSelectionChange(newSelectedIds);
     }
-
-    // Save to database
-    await saveSelection(productId, !isSelected);
   };
 
   // Filter products based on search query

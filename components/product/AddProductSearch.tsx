@@ -31,7 +31,7 @@ export default function AddProductSearch({
           placeholder="Zoeken..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full bg-transparent text-sm text-[#2B2B2B] placeholder:text-[#2B2B2B]/60 focus:outline-none"
+          className="w-full bg-transparent text-base text-[#2B2B2B] placeholder:text-[#2B2B2B]/60 focus:outline-none"
         />
       </div>
     </div>

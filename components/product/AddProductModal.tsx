@@ -10,19 +10,6 @@ import AddProductList from './AddProductList';
 import { AddProductItemData } from './AddProductItem';
 import { suggestIngredientTag } from '@/lib/utils/productTagging';
 
-// Standard popular products (fallback when no user history)
-const STANDARD_POPULAR_PRODUCTS: AddProductItemData[] = [
-  { barcode: null, name: 'Melk', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Brood', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Eieren', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Boter', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Kaas', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Yoghurt', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Tomaten', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Ui', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Knoflook', image: null, brand: null, quantity: null },
-  { barcode: null, name: 'Aardappelen', image: null, brand: null, quantity: null },
-];
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -55,11 +42,13 @@ export default function AddProductModal({
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Get distinct product names from user's inventory, grouped by frequency
+        // Get recently added products, sorted by created_at (most recent first)
         const { data, error } = await supabase
           .from('inventory')
-          .select('product_name, product_image')
-          .eq('user_id', user.id);
+          .select('product_name, product_image, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(15);
 
         if (error) {
           console.error('Error loading user history:', error);
@@ -72,31 +61,24 @@ export default function AddProductModal({
           return;
         }
 
-        // Group by product_name and count frequency
-        const productMap = new Map<string, { name: string; image: string | null; count: number }>();
+        // Get unique products (by name), keeping the most recent one for each
+        const productMap = new Map<string, { name: string; image: string | null; created_at: string }>();
         
         data.forEach((item) => {
           const name = item.product_name;
-          const existing = productMap.get(name);
-          if (existing) {
-            existing.count += 1;
-            // Prefer items with images
-            if (!existing.image && item.product_image) {
-              existing.image = item.product_image;
-            }
-          } else {
+          if (!productMap.has(name)) {
             productMap.set(name, {
               name,
               image: item.product_image || null,
-              count: 1,
+              created_at: item.created_at,
             });
           }
         });
 
-        // Convert to array and sort by frequency
+        // Convert to array and sort by created_at (most recent first)
         const historyProducts: AddProductItemData[] = Array.from(productMap.values())
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 20)
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))
+          .slice(0, 15)
           .map((item) => ({
             barcode: null,
             name: item.name,
@@ -120,9 +102,8 @@ export default function AddProductModal({
     if (!isOpen) return;
 
     if (searchQuery.trim() === '') {
-      // Show user history first, then standard products
-      const combinedProducts = [...userHistory, ...STANDARD_POPULAR_PRODUCTS];
-      setProducts(combinedProducts);
+      // Show only recently added products
+      setProducts(userHistory);
       setIsLoading(false);
       return;
     }
@@ -286,6 +267,7 @@ export default function AddProductModal({
               products={products}
               onProductClick={handleProductClick}
               isLoading={isLoading && searchQuery.trim() !== ''}
+              showHeader={searchQuery.trim() === '' && products.length > 0}
             />
           </motion.div>
         </motion.div>

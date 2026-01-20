@@ -25,7 +25,7 @@ export default function CookingModeHeader({
         {/* Back Button */}
         <button
           onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#E5E5E0] transition-colors hover:bg-[#E5E5E0]"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[#E5E5E0] transition-colors hover:bg-[#E5E5E0] min-h-[44px] min-w-[44px]"
           aria-label="Terug"
         >
           <svg
@@ -57,7 +57,7 @@ export default function CookingModeHeader({
         <div className="relative">
           <button
             onClick={onTimerClick}
-            className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
+            className={`flex h-11 w-11 items-center justify-center rounded-full border transition-colors min-h-[44px] min-w-[44px] ${
               hasActiveTimers
                 ? 'bg-[#1F6F54] border-[#1F6F54] text-white'
                 : 'bg-white border-[#E5E5E0] text-[#2B2B2B] hover:bg-[#E5E5E0]'

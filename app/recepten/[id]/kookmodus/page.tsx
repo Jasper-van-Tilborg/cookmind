@@ -7,6 +7,7 @@ import { Recipe } from '@/app/recepten/page';
 import CookingModeHeader from '@/components/recepten/CookingModeHeader';
 import CookingProgressBar from '@/components/recepten/CookingProgressBar';
 import CookingInstructions from '@/components/recepten/CookingInstructions';
+import CookingCompletionScreen from '@/components/recepten/CookingCompletionScreen';
 import { parseTimerFromInstruction } from '@/lib/utils/timerParser';
 
 export interface ActiveTimer {
@@ -29,6 +30,7 @@ export default function CookingModePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [activeTimers, setActiveTimers] = useState<ActiveTimer[]>([]);
   const [showTimerModal, setShowTimerModal] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
 
   useEffect(() => {
     const loadRecipe = async () => {
@@ -37,7 +39,7 @@ export default function CookingModePage() {
         setError(null);
 
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           router.push('/onboarding');
           return;
@@ -112,9 +114,9 @@ export default function CookingModePage() {
         const updatedTimers = prevTimers
           .map((timer) => {
             if (!timer.isRunning) return timer;
-            
+
             const newRemaining = Math.max(0, timer.remainingSeconds - 1);
-            
+
             // Timer finished
             if (newRemaining === 0) {
               // Show notification
@@ -124,7 +126,7 @@ export default function CookingModePage() {
                   icon: '/favicon.ico',
                 });
               }
-              
+
               // Play sound (optional)
               try {
                 const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OSdTgwOUKjk8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBtpvfDknU4MDlCo5PC2YxwGOJHX8sx5LAUkd8fw3ZBAC');
@@ -135,7 +137,7 @@ export default function CookingModePage() {
                 // Ignore audio errors
               }
             }
-            
+
             return {
               ...timer,
               remainingSeconds: newRemaining,
@@ -151,9 +153,18 @@ export default function CookingModePage() {
   }, [activeTimers.length]);
 
   const handleNextStep = () => {
-    if (recipe && currentStep < recipe.instructions.length - 1) {
-      setCurrentStep(currentStep + 1);
+    if (recipe) {
+      if (currentStep < recipe.instructions.length - 1) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        // Last step - show completion screen
+        setShowCompletion(true);
+      }
     }
+  };
+
+  const handleBackToRecipe = () => {
+    router.push(`/recepten/${recipeId}`);
   };
 
   const handlePreviousStep = () => {
@@ -220,6 +231,16 @@ export default function CookingModePage() {
 
   const totalSteps = recipe.instructions.length;
   const progress = ((currentStep + 1) / totalSteps) * 100;
+
+  // Show completion screen if cooking is complete
+  if (showCompletion) {
+    return (
+      <CookingCompletionScreen
+        recipeTitle={recipe.title}
+        onBackToRecipe={handleBackToRecipe}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FAFAF7]">

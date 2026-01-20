@@ -14,6 +14,7 @@ export interface InventoryItem {
   details?: string;
   ingredient_tag?: string | null;
   expiry_date?: string | null;
+  created_at?: string;
 }
 
 interface ProductCardProps {

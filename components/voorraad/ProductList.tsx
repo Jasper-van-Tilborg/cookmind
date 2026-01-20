@@ -45,7 +45,10 @@ export default function ProductList({
         case 'date':
         default:
           // Sort by created_at descending (newest first)
-          return 0;
+          if (!a.created_at && !b.created_at) return 0;
+          if (!a.created_at) return 1; // a goes to bottom
+          if (!b.created_at) return -1; // b goes to bottom
+          return b.created_at.localeCompare(a.created_at); // Descending (newest first)
       }
     });
 

@@ -39,18 +39,12 @@ export default function VoorraadPage() {
           return;
         }
 
-        // Load inventory and basic inventory in parallel
-        const [inventoryResult, basicInventoryResult] = await Promise.all([
-          supabase
-            .from('inventory')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('basic_inventory')
-            .select('product_id')
-            .eq('user_id', user.id),
-        ]);
+        // Load inventory
+        const inventoryResult = await supabase
+          .from('inventory')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
         // Handle inventory
         if (inventoryResult.error) {
@@ -60,34 +54,22 @@ export default function VoorraadPage() {
           setItems(inventoryResult.data || []);
         }
 
-        // Handle basic inventory
-        if (basicInventoryResult.error) {
-          const error = basicInventoryResult.error;
-          const errorCode = error?.code;
-          const errorMessage = error?.message || '';
-          // Check if it's a "relation does not exist" error (table not created yet)
-          const isRelationError = 
-            errorCode === '42P01' || 
-            errorMessage.toLowerCase().includes('does not exist') ||
-            errorMessage.toLowerCase().includes('relation') ||
-            errorMessage.toLowerCase().includes('table');
-          
-          // Only log if it's a real error, not just missing table
-          if (!isRelationError && errorMessage) {
-            console.error('Error loading basic inventory:', {
-              code: errorCode,
-              message: errorMessage,
-              details: error?.details,
-              hint: error?.hint,
-            });
+        // Load basic inventory from localStorage
+        const loadBasicInventory = () => {
+          try {
+            const stored = localStorage.getItem('cookmind_basic_inventory');
+            if (stored) {
+              const ids = JSON.parse(stored) as string[];
+              setBasicInventorySelectedIds(new Set(ids));
+            } else {
+              setBasicInventorySelectedIds(new Set());
+            }
+          } catch (error) {
+            console.error('Error loading basic inventory from localStorage:', error);
+            setBasicInventorySelectedIds(new Set());
           }
-          // Set empty set if table doesn't exist yet or other error
-          setBasicInventorySelectedIds(new Set());
-        } else {
-          setBasicInventorySelectedIds(
-            new Set((basicInventoryResult.data || []).map((item) => item.product_id))
-          );
-        }
+        };
+        loadBasicInventory();
 
         setIsLoading(false);
       } catch (error) {

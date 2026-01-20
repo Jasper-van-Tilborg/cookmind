@@ -49,8 +49,8 @@ export default function ReceptenPage() {
           return;
         }
 
-        // Load recipes, inventory, basic inventory and adapted recipes in parallel
-        const [recipesResult, inventoryResult, basicInventoryResult, adaptedRecipesResult] = await Promise.all([
+        // Load recipes, inventory and adapted recipes in parallel
+        const [recipesResult, inventoryResult, adaptedRecipesResult] = await Promise.all([
           supabase
             .from('recipes')
             .select('*')
@@ -60,14 +60,26 @@ export default function ReceptenPage() {
             .select('*')
             .eq('user_id', user.id),
           supabase
-            .from('basic_inventory')
-            .select('product_id')
-            .eq('user_id', user.id),
-          supabase
             .from('user_recipe_adaptations')
             .select('original_recipe_id')
             .eq('user_id', user.id),
         ]);
+
+        // Load basic inventory from localStorage
+        const loadBasicInventory = () => {
+          try {
+            const stored = localStorage.getItem('cookmind_basic_inventory');
+            if (stored) {
+              const ids = JSON.parse(stored) as string[];
+              return new Set(ids);
+            }
+          } catch (error) {
+            console.error('Error loading basic inventory from localStorage:', error);
+          }
+          return new Set<string>();
+        };
+        const basicInventorySet = loadBasicInventory();
+        setBasicInventory(basicInventorySet);
 
         // Handle recipes
         if (recipesResult.error) {
@@ -83,12 +95,6 @@ export default function ReceptenPage() {
           // Handle inventory
           const inventoryData = inventoryResult.data || [];
           setInventory(inventoryData);
-
-          // Handle basic inventory
-          const basicInventorySet = new Set(
-            (basicInventoryResult.data || []).map((item) => item.product_id)
-          );
-          setBasicInventory(basicInventorySet);
 
           // Handle adapted recipes
           const adaptedIds = new Set(
@@ -193,8 +199,7 @@ export default function ReceptenPage() {
                 recipe={recipe}
                 isAdapted={adaptedRecipeIds.has(recipe.id)}
                 onAIClick={() => {
-                  // TODO: Implement AI functionality
-                  console.log('AI click for recipe:', recipe.id);
+                  router.push(`/recepten/${recipe.id}?ai-demo=true`);
                 }}
               />
             ))}

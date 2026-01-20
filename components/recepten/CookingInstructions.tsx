@@ -88,7 +88,7 @@ export default function CookingInstructions({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onToggleTimer(index)}
-                      className="flex items-center gap-2 rounded-xl bg-[#1F6F54] px-4 py-2 text-white text-sm font-medium transition-colors hover:bg-[#1a5d47]"
+                      className="flex items-center gap-2 rounded-xl bg-[#1F6F54] px-4 py-3 text-base text-white font-medium transition-colors hover:bg-[#1a5d47] min-h-[44px]"
                     >
                       <svg
                         width="16"
@@ -120,7 +120,7 @@ export default function CookingInstructions({
                     </button>
                     <button
                       onClick={() => onStopTimer(index)}
-                      className="rounded-xl bg-red-500 px-3 py-2 text-white text-sm font-medium transition-colors hover:bg-red-600"
+                      className="rounded-xl bg-red-500 px-4 py-3 text-base text-white font-medium transition-colors hover:bg-red-600 min-h-[44px]"
                     >
                       Stop
                     </button>
@@ -128,7 +128,7 @@ export default function CookingInstructions({
                 ) : (
                   <button
                     onClick={() => onStartTimer(index, instruction)}
-                    className="flex items-center gap-2 rounded-xl bg-white border border-[#E5E5E0] px-4 py-2 text-[#2B2B2B] text-sm font-medium transition-colors hover:bg-[#E5E5E0]"
+                    className="flex items-center gap-2 rounded-xl bg-white border border-[#E5E5E0] px-4 py-3 text-base text-[#2B2B2B] font-medium transition-colors hover:bg-[#E5E5E0] min-h-[44px]"
                   >
                     <svg
                       width="16"
@@ -164,14 +164,13 @@ export default function CookingInstructions({
                 <button
                   onClick={onPreviousStep}
                   disabled={index === 0}
-                  className="flex-1 rounded-xl bg-white border border-[#E5E5E0] px-4 py-2 text-[#2B2B2B] font-medium transition-colors hover:bg-[#E5E5E0] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 rounded-xl bg-white border border-[#E5E5E0] px-4 py-3 text-base text-[#2B2B2B] font-medium transition-colors hover:bg-[#E5E5E0] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   Vorige stap
                 </button>
                 <button
                   onClick={onNextStep}
-                  disabled={index === instructions.length - 1}
-                  className="flex-1 rounded-xl bg-[#1F6F54] px-4 py-2 text-white font-medium transition-colors hover:bg-[#1a5d47] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 rounded-xl bg-[#1F6F54] px-4 py-3 text-base font-medium text-white transition-colors hover:bg-[#1a5d47] min-h-[44px]"
                 >
                   {index === instructions.length - 1 ? 'Klaar!' : 'Volgende stap'}
                 </button>

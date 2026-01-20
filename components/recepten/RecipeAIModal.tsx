@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
@@ -12,6 +12,7 @@ interface RecipeAIModalProps {
   recipe: Recipe;
   hasAllIngredients: boolean;
   missingIngredients: string[];
+  initialPrompt?: string | null;
 }
 
 export default function RecipeAIModal({
@@ -20,12 +21,20 @@ export default function RecipeAIModal({
   recipe,
   hasAllIngredients,
   missingIngredients,
+  initialPrompt,
 }: RecipeAIModalProps) {
   const router = useRouter();
   const supabase = createClient();
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(initialPrompt || '');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update prompt when initialPrompt changes
+  useEffect(() => {
+    if (initialPrompt) {
+      setPrompt(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   const suggestions = [
     'Maak het vegetarisch',
@@ -107,11 +116,9 @@ export default function RecipeAIModal({
 
       // Close modal first
       onClose();
-      
-      // Wait a moment for modal to close, then reload to show updated recipe
-      setTimeout(() => {
-        window.location.reload();
-      }, 300);
+
+      // Reload the page to show updated recipe with highlights
+      window.location.reload();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Onbekende fout bij aanpassen recept';
       setError(errorMessage);
@@ -224,7 +231,7 @@ export default function RecipeAIModal({
                     <button
                       key={index}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="rounded-xl bg-[#9FC5B5] px-4 py-2 text-sm text-[#2B2B2B] font-medium transition-colors hover:bg-[#8FB5A5]"
+                      className="rounded-xl bg-[#9FC5B5] px-4 py-3 text-base text-[#2B2B2B] font-medium transition-colors hover:bg-[#8FB5A5] min-h-[44px]"
                     >
                       {suggestion}
                     </button>

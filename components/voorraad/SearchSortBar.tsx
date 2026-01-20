@@ -26,7 +26,7 @@ export default function SearchSortBar({ onSearch, onSort }: SearchSortBarProps) 
           placeholder="Zoeken..."
           value={searchQuery}
           onChange={handleSearchChange}
-          className="w-full rounded-xl bg-[#9FC5B5] px-4 py-3 pl-10 text-[#2B2B2B] placeholder:text-[#2B2B2B]/60 focus:outline-none focus:ring-2 focus:ring-[#1F6F54]"
+          className="w-full rounded-xl bg-[#9FC5B5] px-4 py-3 pl-10 text-base text-[#2B2B2B] placeholder:text-[#2B2B2B]/60 focus:outline-none focus:ring-2 focus:ring-[#1F6F54]"
         />
         <svg
           width="20"
@@ -90,7 +90,7 @@ export default function SearchSortBar({ onSearch, onSort }: SearchSortBarProps) 
                   onSort('name');
                   setShowSortMenu(false);
                 }}
-                className="w-full px-4 py-3 text-left text-sm text-[#2B2B2B] hover:bg-[#E5E5E0] first:rounded-t-xl"
+                className="w-full px-4 py-3 text-left text-base text-[#2B2B2B] hover:bg-[#E5E5E0] first:rounded-t-xl min-h-[44px]"
               >
                 Sorteer op naam
               </button>
@@ -99,7 +99,7 @@ export default function SearchSortBar({ onSearch, onSort }: SearchSortBarProps) 
                   onSort('expiry');
                   setShowSortMenu(false);
                 }}
-                className="w-full px-4 py-3 text-left text-sm text-[#2B2B2B] hover:bg-[#E5E5E0]"
+                className="w-full px-4 py-3 text-left text-base text-[#2B2B2B] hover:bg-[#E5E5E0] min-h-[44px]"
               >
                 Sorteer op houdbaarheidsdatum
               </button>
@@ -108,7 +108,7 @@ export default function SearchSortBar({ onSearch, onSort }: SearchSortBarProps) 
                   onSort('date');
                   setShowSortMenu(false);
                 }}
-                className="w-full px-4 py-3 text-left text-sm text-[#2B2B2B] hover:bg-[#E5E5E0]"
+                className="w-full px-4 py-3 text-left text-base text-[#2B2B2B] hover:bg-[#E5E5E0] min-h-[44px]"
               >
                 Sorteer op datum
               </button>
@@ -117,7 +117,7 @@ export default function SearchSortBar({ onSearch, onSort }: SearchSortBarProps) 
                   onSort('quantity');
                   setShowSortMenu(false);
                 }}
-                className="w-full px-4 py-3 text-left text-sm text-[#2B2B2B] hover:bg-[#E5E5E0] last:rounded-b-xl"
+                className="w-full px-4 py-3 text-left text-base text-[#2B2B2B] hover:bg-[#E5E5E0] last:rounded-b-xl min-h-[44px]"
               >
                 Sorteer op hoeveelheid
               </button>
