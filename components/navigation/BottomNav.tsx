@@ -18,7 +18,7 @@ export default function BottomNav({ onVoorraadClick }: BottomNavProps = {}) {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E5E5E0] bg-[#FAFAF7] px-6 py-3">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E5E5E0] bg-[#FAFAF7] px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="mx-auto flex max-w-md items-center justify-around">
         <Link
           href="/"

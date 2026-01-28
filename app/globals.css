@@ -3,26 +3,56 @@
 :root {
   /* CookMind AI Brand Colors */
   --color-primary: #1f6f54;
+  --color-primary-dark: #1a5d47;
+  --color-primary-light: #d6ede2;
   --color-background: #fafaf7;
   --color-gradient: #9fc5b5;
   --color-text-primary: #2b2b2b;
   --color-inactive: #e5e5e0;
   --color-button-text: #fafaf7;
-
-  /* Legacy colors for compatibility */
-  --background: #fafaf7;
-  --foreground: #2b2b2b;
 }
 
 @theme inline {
   --color-background: var(--color-background);
   --color-foreground: var(--color-text-primary);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--color-background);
   color: var(--color-text-primary);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent pull-to-refresh in standalone PWA */
+  overscroll-behavior-y: contain;
+}
+
+/* Safe area padding for iPhone notch/home indicator */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Disable text selection on interactive elements for app-like feel */
+button, a, nav {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* PWA standalone mode adjustments */
+@media all and (display-mode: standalone) {
+  body {
+    /* Extra padding for status bar area */
+    padding-top: env(safe-area-inset-top);
+  }
 }

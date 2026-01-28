@@ -1,18 +1,12 @@
 import { createBrowserClient } from '@supabase/ssr';
 
+// Placeholder values for build-time prerendering (replaced at runtime by env vars)
+const FALLBACK_URL = 'https://placeholder.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSJ9.placeholder';
+
 export function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase environment variables. Please check your .env.local file.\n' +
-      'Required variables:\n' +
-      '- NEXT_PUBLIC_SUPABASE_URL\n' +
-      '- NEXT_PUBLIC_SUPABASE_ANON_KEY\n\n' +
-      'Make sure to restart your dev server after adding these variables.'
-    );
-  }
-
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY,
+  );
 }
